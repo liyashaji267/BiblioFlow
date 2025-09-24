@@ -1,0 +1,28 @@
+# Clean up first
+del *.class
+
+# Compile in dependency order
+javac DBUtil.java
+javac User.java
+javac UserDAO.java
+javac Book.java
+javac BookDAO.java
+javac BillGenerator.java
+javac BillDAO.java
+javac PaymentOpt.java
+javac WrapLayout.java
+javac BookstoreLogin.java
+javac MainApplication.java
+javac frontpage.java
+
+# Run the application
+java -cp .;mysql-connector-j-9.0.0.jar frontpage
+
+
+
+
+
+
+to run TestDB(to check whether the sql file is working)
+javac -cp .;mysql-connector-j-9.0.0.jar TestDB.java
+java -cp .;mysql-connector-j-9.0.0.jar TestDB
