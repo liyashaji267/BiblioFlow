@@ -103,8 +103,15 @@ public class PaymentOpt extends JFrame {
         JPanel qrPanel = new JPanel(new BorderLayout());
         qrPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JLabel qrLabel = new JLabel("📱 QR CODE PLACEHOLDER", SwingConstants.CENTER);
-        qrLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        // Load image as an Icon
+        ImageIcon qrIcon = new ImageIcon("D:\\java project new\\JAVA Project\\BiblioFlow\\imgs\\qr.jpg");
+
+        // Optional: scale the image to fit the label
+        Image img = qrIcon.getImage().getScaledInstance(300, 300, Image.SCALE_SMOOTH);
+        qrIcon = new ImageIcon(img);
+
+        // Create JLabel with the image
+        JLabel qrLabel = new JLabel(qrIcon, SwingConstants.CENTER);
         qrLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
         qrLabel.setPreferredSize(new Dimension(300, 300));
 

@@ -1,8 +1,66 @@
-# Clean up first
 del *.class
 
-# Compile in dependency order
+javac -cp "lib/*" DBUtil.java
+javac -cp ".;lib/*" User.java
+javac -cp ".;lib/*" Book.java
+javac -cp ".;lib/*" UserDAO.java
+javac -cp ".;lib/*" BookDAO.java
+javac -cp ".;lib/*" BillDAO.java
+javac -cp ".;lib/*" BillGenerator.java
+javac -cp ".;lib/*" PaymentOpt.java
+javac -cp ".;lib/*" WrapLayout.java
+javac -cp ".;lib/*" BookstoreLogin.java
+javac -cp ".;lib/*" MainApplication.java
+javac -cp ".;lib/*" frontpage.java
+javac -cp ".;lib/*" ScanBarcodePanel.java
+javac -cp ".;lib/*" DarkLightModeApp.java
+
+
+java -cp ".;lib/*" frontpage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+del *.class
+
+
+javac -cp ".;*.jar" *.java
+java -cp ".;*.jar" frontpage
+
+
+del *.class
 javac DBUtil.java
+javac BarcodeDB.java
 javac User.java
 javac UserDAO.java
 javac Book.java
@@ -14,15 +72,14 @@ javac WrapLayout.java
 javac BookstoreLogin.java
 javac MainApplication.java
 javac frontpage.java
-
-# Run the application
-java -cp .;mysql-connector-j-9.0.0.jar frontpage
-
-
-
+javac DarkLightModeApp.java
+javac -cp "lib/*" ScanBarcodePanel.java
+java -cp ".;lib/*" frontpage
 
 
 
 to run TestDB(to check whether the sql file is working)
 javac -cp .;mysql-connector-j-9.0.0.jar TestDB.java
 java -cp .;mysql-connector-j-9.0.0.jar TestDB
+
+

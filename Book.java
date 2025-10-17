@@ -1,4 +1,3 @@
-// Book.java
 public class Book {
     private int id;
     private String isbn;
@@ -7,14 +6,17 @@ public class Book {
     private String publisher;
     private String edition;
     private double price;
-    private int stockQuantity;
+    private int stockQuantity;   // Available stock in DB
     private String rackNumber;
     private String location;
     private String imagePath;
     private String genre;
-    
-    public Book(int id, String isbn, String title, String author, String publisher, 
-                String edition, double price, int stockQuantity, String rackNumber, 
+
+    // Quantity the customer wants to buy
+    private int cartQuantity;
+
+    public Book(int id, String isbn, String title, String author, String publisher,
+                String edition, double price, int stockQuantity, String rackNumber,
                 String location, String imagePath, String genre) {
         this.id = id;
         this.isbn = isbn;
@@ -28,9 +30,12 @@ public class Book {
         this.location = location;
         this.imagePath = imagePath;
         this.genre = genre;
+        this.cartQuantity = 0; // default, set when added to cart
     }
-    
-    // Getters and setters
+
+    // ==========================
+    // Getters
+    // ==========================
     public int getId() { return id; }
     public String getIsbn() { return isbn; }
     public String getTitle() { return title; }
@@ -43,4 +48,22 @@ public class Book {
     public String getLocation() { return location; }
     public String getImagePath() { return imagePath; }
     public String getGenre() { return genre; }
+    public int getCartQuantity() { return cartQuantity; }
+
+    // ==========================
+    // Setters
+    // ==========================
+    public void setId(int id) { this.id = id; }
+    public void setIsbn(String isbn) { this.isbn = isbn; }
+    public void setTitle(String title) { this.title = title; }
+    public void setAuthor(String author) { this.author = author; }
+    public void setPublisher(String publisher) { this.publisher = publisher; }
+    public void setEdition(String edition) { this.edition = edition; }
+    public void setPrice(double price) { this.price = price; }
+    public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
+    public void setRackNumber(String rackNumber) { this.rackNumber = rackNumber; }
+    public void setLocation(String location) { this.location = location; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
+    public void setGenre(String genre) { this.genre = genre; }
+    public void setCartQuantity(int cartQuantity) { this.cartQuantity = cartQuantity; }
 }

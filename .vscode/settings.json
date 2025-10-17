@@ -1,0 +1,43 @@
+{
+    "java.project.sourcePaths": [
+        "."
+    ],
+    "java.project.referencedLibraries": [
+        "lib\\bridj-0.7.0.jar",
+        "lib\\commons-collections4-4.4.jar",
+        "lib\\commons-io-2.18.0.jar",
+        "lib\\commons-logging-1.2.jar",
+        "lib\\core-3.4.1.jar",
+        "lib\\core-3.5.3.jar",
+        "lib\\httpclient-4.5.14.jar",
+        "lib\\httpcore-4.4.15.jar",
+        "lib\\itextpdf-5.5.13.3.jar",
+        "lib\\jackson-annotations-2.15.2.jar",
+        "lib\\jackson-core-2.15.2.jar",
+        "lib\\jackson-databind-2.15.2.jar",
+        "lib\\jackson-datatype-jsr310-2.17.0.jar",
+        "lib\\jakarta.xml.bind-api-2.3.3.jar",
+        "lib\\java-dotenv-3.2.0.jar",
+        "lib\\java-dotenv-5.2.2.jar",
+        "lib\\javase-3.4.1.jar",
+        "lib\\javase-3.5.3.jar",
+        "lib\\jaxb-api-2.3.1.jar",
+        "lib\\jaxb-runtime-2.3.1.jar",
+        "lib\\jcommon-1.0.24.jar",
+        "lib\\jfreechart-1.5.3.jar",
+        "lib\\kotlin-stdlib-1.9.0.jar",
+        "lib\\log4j-api-2.25.1.jar",
+        "lib\\log4j-core-2.25.1.jar",
+        "lib\\mysql-connector-j-9.0.0.jar",
+        "lib\\okhttp-4.11.0.jar",
+        "lib\\okio-3.5.0.jar",
+        "lib\\poi-5.4.1.jar",
+        "lib\\poi-ooxml-5.4.1.jar",
+        "lib\\protobuf-java-3.21.12.jar",
+        "lib\\slf4j-api-1.7.2.jar",
+        "lib\\slf4j-api-1.7.36.jar",
+        "lib\\twilio-8.36.0.jar",
+        "lib\\webcam-capture-0.3.12.jar",
+        "lib\\xmlbeans-5.3.0.jar"
+    ]
+}

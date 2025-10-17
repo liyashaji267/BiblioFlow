@@ -1,0 +1,43 @@
+public class Bill {
+    private int id;
+    private String billNumber;
+    private String customerName;
+    private String customerPhone;
+    private double totalAmount;
+    private double gstAmount;
+    private double finalAmount;
+    private String paymentStatus;
+    private String orderStatus;
+    private String date;
+
+    // Getters and setters
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+
+    public String getBillNumber() { return billNumber; }
+    public void setBillNumber(String billNumber) { this.billNumber = billNumber; }
+
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+
+    public String getCustomerPhone() { return customerPhone; }
+    public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
+
+    public double getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(double totalAmount) { this.totalAmount = totalAmount; }
+
+    public double getGstAmount() { return gstAmount; }
+    public void setGstAmount(double gstAmount) { this.gstAmount = gstAmount; }
+
+    public double getFinalAmount() { return finalAmount; }
+    public void setFinalAmount(double finalAmount) { this.finalAmount = finalAmount; }
+
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+
+    public String getOrderStatus() { return orderStatus; }
+    public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
+
+    public String getDate() { return date; }
+    public void setDate(String date) { this.date = date; }
+}

@@ -61,6 +61,13 @@ public class BookDAO {
         return null;
     }
     
+    public Book findBookByTitle(String title) {
+        return getAllBooks().stream()
+            .filter(b -> b.getTitle().equalsIgnoreCase(title))
+            .findFirst()
+            .orElse(null);
+    }
+
     public List<Book> getAllBooks() {
         List<Book> books = new ArrayList<>();
         String sql = "SELECT * FROM books ORDER BY title";
@@ -151,6 +158,75 @@ public List<Book> searchBooks(String query, String column) {
         e.printStackTrace();
     }
     return books;
+}
+
+    public boolean updateBook(Book book) {
+        String sql = "UPDATE books SET title = ?, author = ?, publisher = ?, price = ?, stock_quantity = ? WHERE isbn = ?";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, book.getTitle());
+            pstmt.setString(2, book.getAuthor());
+            pstmt.setString(3, book.getPublisher());
+            pstmt.setDouble(4, book.getPrice());
+            pstmt.setInt(5, book.getStockQuantity());
+            pstmt.setString(6, book.getIsbn());
+            
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    public boolean deleteBook(String isbn) {
+        String sql = "DELETE FROM books WHERE isbn = ?";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, isbn);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean reduceStock(int bookId, int quantity) {
+    String sql = "UPDATE books SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?";
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setInt(1, quantity);
+        stmt.setInt(2, bookId);
+        stmt.setInt(3, quantity);
+
+        int rows = stmt.executeUpdate();
+        return rows > 0;
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return false;
+    }
+}
+
+public double getBookCostPrice(String bookName) {
+    double cost = 0;
+    String sql = "SELECT cost_price FROM books WHERE title = ?";
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setString(1, bookName);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) cost = rs.getDouble("cost_price");
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return cost;
 }
 
 
