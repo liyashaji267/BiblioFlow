@@ -21,6 +21,9 @@ import java.util.List;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseAdapter;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+
 public class MainApplication extends JFrame {
     private User currentUser;
     private JPanel mainPanel;
@@ -47,9 +50,9 @@ public class MainApplication extends JFrame {
     private static final java.awt.Color TABLE_BG = java.awt.Color.WHITE;
     private static final java.awt.Color TABLE_FG = java.awt.Color.BLACK;
     private static final java.awt.Color TABLE_GRID = java.awt.Color.LIGHT_GRAY;
-    private static final java.awt.Color SELECTION_BG = new java.awt.Color(70, 130, 180);
+    private static final java.awt.Color SELECTION_BG = new java.awt.Color(230, 200, 180);
     private static final java.awt.Color SELECTION_FG = java.awt.Color.WHITE;
-    private static final java.awt.Color HEADER_BG = new java.awt.Color(70, 130, 180);
+    private static final java.awt.Color HEADER_BG = new java.awt.Color();
     private static final java.awt.Color HEADER_FG = java.awt.Color.WHITE;
 
     private DefaultListModel<String> historyListModel = new DefaultListModel<>();
@@ -75,27 +78,31 @@ public class MainApplication extends JFrame {
 
 
     private void initUI() {
-        
-        cardLayout = new CardLayout();
-        mainPanel = new JPanel(cardLayout);
-        
-        // Create different panels
-        JPanel dashboardPanel = createDashboardPanel();
-        JPanel inventoryPanel = createInventoryPanel();
-        JPanel billingPanel = createBillingPanel();
-        substorePanel = new SubstoreCartPanel();
-        JPanel storeReports = new StoreReports();        
+    cardLayout = new CardLayout();
+    mainPanel = new JPanel(cardLayout);
+    
+    // Create different panels
+    JPanel dashboardPanel = createDashboardPanel();
+    JPanel inventoryPanel = createInventoryPanel();
+    JPanel billingPanel = createBillingPanel();
+    substorePanel = new SubstoreCartPanel();
+    JPanel storeReports = new StoreReports();
+    
+    // Create the new history panels
+    JPanel billingHistoryPanel = createBillingHistoryPanel();
+    JPanel transactionHistoryPanel = createTransactionHistoryPanel();
      
-        mainPanel.add(dashboardPanel, "Dashboard");
-        mainPanel.add(inventoryPanel, "Inventory");
-        mainPanel.add(billingPanel, "Billing");
-        mainPanel.add(substorePanel, "Substore");
-        mainPanel.add(storeReports, "Reports");
+    mainPanel.add(dashboardPanel, "Dashboard");
+    mainPanel.add(inventoryPanel, "Inventory");
+    mainPanel.add(billingPanel, "Billing");
+    mainPanel.add(billingHistoryPanel, "BillingHistory");
+    mainPanel.add(transactionHistoryPanel, "TransactionHistory");
+    mainPanel.add(substorePanel, "Substore");
+    mainPanel.add(storeReports, "Reports");
 
-
-        // Create menu bar
-        JMenuBar menuBar = createMenuBar();
-        setJMenuBar(menuBar);
+    // Create menu bar
+    JMenuBar menuBar = createMenuBar();
+    setJMenuBar(menuBar);
         
         add(mainPanel);
         // ===== Dark Mode Toggle =====
@@ -142,29 +149,36 @@ public class MainApplication extends JFrame {
         // Operations Menu
         JMenu operationsMenu = new JMenu("Operations");
         operationsMenu.setForeground(Color.WHITE);
-        
+    
         JMenuItem inventoryItem = new JMenuItem("Inventory Management");
         JMenuItem billingItem = new JMenuItem("Billing");
+        JMenuItem billingHistoryItem = new JMenuItem("Billing History");
+        JMenuItem transactionHistoryItem = new JMenuItem("Transaction History");
         JMenuItem substoreItem = new JMenuItem("Substore Lookup");
         JMenuItem reportsItem = new JMenuItem("Reports");
 
-        reportsItem.addActionListener(e -> cardLayout.show(mainPanel, "Reports"));
-        
+        // Add action listeners
         inventoryItem.addActionListener(e -> {
             refreshInventory();
             cardLayout.show(mainPanel, "Inventory");
         });
         billingItem.addActionListener(_ -> cardLayout.show(mainPanel, "Billing"));
+        billingHistoryItem.addActionListener(_ -> cardLayout.show(mainPanel, "BillingHistory"));
+        transactionHistoryItem.addActionListener(_ -> cardLayout.show(mainPanel, "TransactionHistory"));
         substoreItem.addActionListener(_ -> {
             refreshSubstore();
             cardLayout.show(mainPanel, "Substore");
         });
-        
+        reportsItem.addActionListener(e -> cardLayout.show(mainPanel, "Reports"));
+    
+        // Add items to menu
         operationsMenu.add(inventoryItem);
         operationsMenu.add(billingItem);
+        operationsMenu.add(billingHistoryItem);
+        operationsMenu.add(transactionHistoryItem);
         operationsMenu.add(substoreItem);
         operationsMenu.add(reportsItem);
-        
+    
         menuBar.add(fileMenu);
         menuBar.add(operationsMenu);
         
@@ -217,48 +231,57 @@ public class MainApplication extends JFrame {
 
     
     private JPanel createDashboardPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        
-        // Header
-        JLabel header = new JLabel("BiblioFlow Dashboard", SwingConstants.CENTER);
-        header.setFont(new Font("Serif", Font.BOLD, 36));
-        header.setForeground(new Color(70, 130, 180));
-        header.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        panel.add(header, BorderLayout.NORTH);
-        
-        // Quick actions panel
-        JPanel actionsPanel = new JPanel(new GridLayout(2, 3, 20, 20)); // Changed to 2x3 grid
-        actionsPanel.setBorder(BorderFactory.createEmptyBorder(50, 100, 50, 100));
-        actionsPanel.setBackground(Color.WHITE);
-        
-        // Create quick action buttons
-        JButton inventoryBtn = createDashboardButton("📚 Inventory Management", "Manage book stock", new Color(76, 175, 80));
-        JButton billingBtn = createDashboardButton("💰 Billing", "Process sales", new Color(33, 150, 243));
-        JButton substoreBtn = createDashboardButton("🏪 Substore", "Check other stores", new Color(156, 39, 176));
-        JButton reportsBtn = createDashboardButton("📊 Reports", "View sales & profits", new Color(255, 152, 0));
+    JPanel panel = new JPanel(new BorderLayout());
+    panel.setBackground(Color.WHITE);
+    
+    // Header
+    JLabel header = new JLabel("BiblioFlow Dashboard", SwingConstants.CENTER);
+    header.setFont(new Font("Serif", Font.BOLD, 36));
+    header.setForeground(new Color(70, 130, 180));
+    header.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+    panel.add(header, BorderLayout.NORTH);
+    
+    // Quick actions panel - UPDATED to 3x2 grid
+    JPanel actionsPanel = new JPanel(new GridLayout(3, 2, 20, 20));
+    actionsPanel.setBorder(BorderFactory.createEmptyBorder(50, 100, 50, 100));
+    actionsPanel.setBackground(Color.WHITE);
+    
+    // Create quick action buttons
+    JButton inventoryBtn = createDashboardButton("📚 Inventory Management", "Manage book stock", new Color(76, 175, 80));
+    JButton billingBtn = createDashboardButton("💰 Billing", "Process sales", new Color(33, 150, 243));
+    JButton billingHistoryBtn = createDashboardButton("📋 Billing History", "View past bills", new Color(156, 39, 176));
+    JButton transactionHistoryBtn = createDashboardButton("💳 Transaction History", "View all transactions", new Color(255, 152, 0));
+    JButton substoreBtn = createDashboardButton("🏪 Substore", "Check other stores", new Color(156, 39, 176));
+    JButton reportsBtn = createDashboardButton("📊 Reports", "View sales & profits", new Color(255, 152, 0));
 
-        reportsBtn.addActionListener(e -> cardLayout.show(mainPanel, "Reports"));
-        
-        inventoryBtn.addActionListener(_ -> {
-            refreshInventory();
-            cardLayout.show(mainPanel, "Inventory");
-        });
-        billingBtn.addActionListener(_ -> cardLayout.show(mainPanel, "Billing"));
-        substoreBtn.addActionListener(_ -> {
-            refreshSubstore();
-            cardLayout.show(mainPanel, "Substore");
-        });
-        
-        actionsPanel.add(inventoryBtn);
-        actionsPanel.add(billingBtn);
-        actionsPanel.add(substoreBtn);
-        actionsPanel.add(reportsBtn);
-        
-        panel.add(actionsPanel, BorderLayout.CENTER);
-        
-        return panel;
+    // Add action listeners for new buttons
+    billingHistoryBtn.addActionListener(_ -> cardLayout.show(mainPanel, "BillingHistory"));
+    transactionHistoryBtn.addActionListener(_ -> cardLayout.show(mainPanel, "TransactionHistory"));
+    reportsBtn.addActionListener(e -> cardLayout.show(mainPanel, "Reports"));
+    
+    inventoryBtn.addActionListener(_ -> {
+        refreshInventory();
+        cardLayout.show(mainPanel, "Inventory");
+    });
+    billingBtn.addActionListener(_ -> cardLayout.show(mainPanel, "Billing"));
+    substoreBtn.addActionListener(_ -> {
+        refreshSubstore();
+        cardLayout.show(mainPanel, "Substore");
+    });
+    
+    // Add all buttons to panel
+    actionsPanel.add(inventoryBtn);
+    actionsPanel.add(billingBtn);
+    actionsPanel.add(billingHistoryBtn);
+    actionsPanel.add(transactionHistoryBtn);
+    actionsPanel.add(substoreBtn);
+    actionsPanel.add(reportsBtn);
+    
+    panel.add(actionsPanel, BorderLayout.CENTER);
+    
+    return panel;
     }
+
     
 
     
@@ -715,6 +738,47 @@ private void proceedToPaymentFromTable(DefaultTableModel tableModel) {
     payment.setVisible(true);
 }
 
+private JPanel createBillingHistoryPanel() {
+    JPanel panel = new JPanel(new BorderLayout());
+    
+    // Header
+    JLabel header = new JLabel("Billing History", SwingConstants.CENTER);
+    header.setFont(new Font("Arial", Font.BOLD, 24));
+    header.setForeground(new Color(70, 130, 180));
+    header.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+    panel.add(header, BorderLayout.NORTH);
+    
+    // Create and add the BillHistoryPanel
+    BillHistoryPanel billHistoryPanel = new BillHistoryPanel();
+    panel.add(billHistoryPanel, BorderLayout.CENTER);
+    
+    // Add refresh button
+    JButton refreshBtn = new JButton("Refresh");
+    refreshBtn.addActionListener(e -> billHistoryPanel.refresh());
+    
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    buttonPanel.add(refreshBtn);
+    panel.add(buttonPanel, BorderLayout.SOUTH);
+    
+    return panel;
+}
+
+private JPanel createTransactionHistoryPanel() {
+    JPanel panel = new JPanel(new BorderLayout());
+    
+    // Header
+    JLabel header = new JLabel("Transaction History", SwingConstants.CENTER);
+    header.setFont(new Font("Arial", Font.BOLD, 24));
+    header.setForeground(new Color(70, 130, 180));
+    header.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+    panel.add(header, BorderLayout.NORTH);
+    
+    // Create and add the TransactionHistoryPanel
+    TransactionHistoryPanel transactionPanel = new TransactionHistoryPanel();
+    panel.add(transactionPanel, BorderLayout.CENTER);
+    
+    return panel;
+}
     
 private JPanel createSubstorePanel() {
     JPanel panel = new JPanel(new BorderLayout());
@@ -846,10 +910,9 @@ private void refreshSubstore() {
 }
 
 private void substoreCart(Book book, int quantity) {
-    substorePanel.getSubstoreCart().addItem(book, quantity);
-    substorePanel.updateCartArea();
-    substorePanel.openPlaceOrderDialog();
-    cardLayout.show(mainPanel, "SubstoreCart");
+    JOptionPane.showMessageDialog(this, 
+        "Please add items directly in the Substore panel using the 'Add' buttons.");
+    cardLayout.show(mainPanel, "Substore");
 }
 
 private JPanel createSubstoreBookCard(Book book) {

@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
@@ -12,22 +13,62 @@ public class OrderStatusPanel extends JPanel {
     public OrderStatusPanel() {
         orderDAO = new OrderDAO();
         setLayout(new BorderLayout());
+        setBackground(new Color(250, 240, 230)); // light warm background
 
+        // TABLE SETUP
         orderTable = new JTable();
+        orderTable.setRowHeight(28);
+        orderTable.setFont(new Font("Serif", Font.PLAIN, 16));
+        orderTable.getTableHeader().setFont(new Font("Georgia", Font.BOLD, 16));
+        orderTable.getTableHeader().setBackground(new Color(150, 90, 60));
+        orderTable.getTableHeader().setForeground(Color.WHITE);
+
+        // Center align text in all columns
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        orderTable.setDefaultRenderer(Object.class, centerRenderer);
+
         refresh();
 
-        btnProcess = new JButton("Process");
-        btnDeliver = new JButton("Deliver");
+        // BUTTONS
+        btnProcess = createStyledButton("Process");
+        btnDeliver = createStyledButton("Deliver");
 
         btnProcess.addActionListener(e -> processOrder());
         btnDeliver.addActionListener(e -> deliverOrder());
 
         JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(new Color(230, 200, 180)); // soft panel background
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         buttonPanel.add(btnProcess);
+        buttonPanel.add(Box.createHorizontalStrut(10));
         buttonPanel.add(btnDeliver);
 
         add(new JScrollPane(orderTable), BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Georgia", Font.BOLD, 18));
+        button.setBackground(new Color(150, 90, 60));
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(140, 45));
+        button.setMaximumSize(new Dimension(140, 45));
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        // Hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(120, 70, 50));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(150, 90, 60));
+            }
+        });
+        return button;
     }
 
     private void refresh() {
@@ -114,22 +155,18 @@ public class OrderStatusPanel extends JPanel {
             String otp = generateOtp();
 
             try {
-                // Save OTP to database (also sets otp_generated_at)
                 if (!orderDAO.saveOrderOtp(orderId, otp)) {
                     throw new Exception("Failed to save OTP to database");
                 }
 
-                // SMS content (simulate)
                 String msg = "BiblioFlow Delivery Alert:\n" +
                         "Order: " + selectedOrder.getOrderNumber() + "\n" +
                         "Items: " + (selectedOrder.getItemsSummary() != null ? selectedOrder.getItemsSummary() : "") + "\n" +
                         "Delivery OTP: " + otp + "\n" +
                         "Please provide this OTP to the delivery person.";
 
-                // Send SMS (simulation - print to console). Replace with real provider as needed.
                 TwilioSMS.sendSms(selectedOrder.getCustomerPhone(), msg);
 
-                // Prompt for OTP verification
                 String typedOtp = JOptionPane.showInputDialog(this,
                         "OTP sent to " + selectedOrder.getCustomerPhone() +
                                 "\nEnter OTP for delivery confirmation:");
@@ -165,22 +202,6 @@ public class OrderStatusPanel extends JPanel {
         return String.valueOf(otp);
     }
 
-    private void sendSms(String toPhone, String message) throws Exception {
-    // Show OTP/message in a pop-up for testing
-    JOptionPane.showMessageDialog(this,
-            "=== SIMULATED SMS ===\nTo: " + toPhone + "\n\n" + message,
-            "SMS Simulation",
-            JOptionPane.INFORMATION_MESSAGE);
-
-    // Optional: still print to console (for logging)
-    System.out.println("=== SMS SIMULATION ===");
-    System.out.println("To: " + toPhone);
-    System.out.println("Message: " + message);
-    System.out.println("=== SMS SENT SUCCESSFULLY ===");
-}
-
-
-    // Public method to call externally to refresh orders
     public void refreshOrders() {
         refresh();
     }

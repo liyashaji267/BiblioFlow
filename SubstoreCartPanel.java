@@ -1,16 +1,15 @@
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-
-import com.mysql.cj.x.protobuf.MysqlxCrud.Order;
-
+import javax.swing.border.*;
+import javax.swing.table.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.List;
 import java.util.ArrayList;
 
 // ====================== CartItem ======================
 class CartItem {
     private Book book;
-    private int quantity; // quantity in this cart
+    private int quantity;
 
     public CartItem(Book book, int quantity) {
         this.book = book;
@@ -22,7 +21,7 @@ class CartItem {
 
     public void setQuantity(int quantity) {
         this.quantity = quantity;
-        book.setCartQuantity(quantity); // sync with book
+        book.setCartQuantity(quantity);
     }
 
     public double getTotalPrice() {
@@ -42,7 +41,7 @@ class SubstoreCart {
             }
         }
         CartItem newItem = new CartItem(book, quantity);
-        book.setCartQuantity(quantity); // update book's cart quantity
+        book.setCartQuantity(quantity);
         items.add(newItem);
     }
 
@@ -50,32 +49,27 @@ class SubstoreCart {
 
     public void clear() {
         for (CartItem item : items) {
-            item.getBook().setCartQuantity(0); // reset book cart quantity
+            item.getBook().setCartQuantity(0);
         }
         items.clear();
     }
 
     public double getTotalAmount() {
-        double total = 0;
-        for (CartItem item : items) {
-            total += item.getTotalPrice();
-        }
-        return total;
+        return items.stream().mapToDouble(CartItem::getTotalPrice).sum();
     }
 }
 
 // ====================== SubstoreCartPanel ======================
 public class SubstoreCartPanel extends JPanel {
     private SubstoreCart substoreCart = new SubstoreCart();
-    private JPanel cartPanel;
+    private JPanel booksPanel;
     private JTable cartTable;
     private DefaultTableModel cartTableModel;
     private JLabel totalLabel;
+
     private BookDAO bookDAO = new BookDAO();
     private OrderDAO orderDAO = new OrderDAO();
     private OrderStatusPanel orderStatusPanel;
-    private JPanel booksPanel;
-
 
     public SubstoreCartPanel() {
         setLayout(new BorderLayout());
@@ -84,127 +78,149 @@ public class SubstoreCartPanel extends JPanel {
         refreshSubstoreBooks();
     }
 
-private void initUI() {
-    JTabbedPane tabbedPane = new JTabbedPane();
+    private void initUI() {
+        JTabbedPane tabbedPane = new JTabbedPane();
 
-    // ---------- Cart Tab ----------
-    JPanel cartAndBooksPanel = new JPanel(new BorderLayout());
+        // ---------- Cart Tab ----------
+        JPanel cartAndBooksPanel = new JPanel(new BorderLayout());
 
-    // Title
-    JLabel title = new JLabel("Substore", SwingConstants.CENTER);
-    title.setFont(new Font("Arial", Font.BOLD, 24));
-    cartAndBooksPanel.add(title, BorderLayout.NORTH);
+        // Gradient title
+        JLabel title = new JLabel("📚 Substore", SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setPaint(new GradientPaint(0, 0, new Color(70, 130, 180),
+                                               getWidth(), getHeight(), new Color(135, 206, 250)));
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                super.paintComponent(g);
+            }
+        };
+        title.setFont(new Font("Arial", Font.BOLD, 28));
+        title.setForeground(Color.WHITE);
+        title.setOpaque(false);
+        title.setBorder(new EmptyBorder(10, 0, 10, 0));
+        cartAndBooksPanel.add(title, BorderLayout.NORTH);
 
-    // Books panel
-    booksPanel = new JPanel(new WrapLayout());
-    JScrollPane booksScroll = new JScrollPane(booksPanel);
-    booksScroll.setName("substoreBooksScroll");
-    cartAndBooksPanel.add(booksScroll, BorderLayout.CENTER);
+        // Books panel with WrapLayout
+        booksPanel = new JPanel(new WrapLayout());
+        JScrollPane booksScroll = new JScrollPane(booksPanel);
+        booksScroll.setBorder(BorderFactory.createEmptyBorder());
+        cartAndBooksPanel.add(booksScroll, BorderLayout.CENTER);
 
-     // Cart panel
-    cartPanel = new JPanel(new BorderLayout());
+        // Cart panel
+        JPanel cartPanel = new JPanel(new BorderLayout());
+        String[] columns = {"Book", "Qty", "Price", "Total"};
+        cartTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        cartTable = new JTable(cartTableModel);
+        cartTable.setFillsViewportHeight(true);
+        cartTable.setRowHeight(28);
+        cartTable.setAutoCreateRowSorter(true);
 
-    // Columns: Book, Qty, Price, Total
-    String[] columns = {"Book", "Qty", "Price", "Total"};
-    cartTableModel = new DefaultTableModel(columns, 0) {
-        @Override
-        public boolean isCellEditable(int row, int column) {
-            return false; // make table read-only
-        }
-    };
-    cartTable = new JTable(cartTableModel);
-    cartTable.setFillsViewportHeight(true);
-
-    cartPanel.add(new JScrollPane(cartTable), BorderLayout.CENTER);
-
-// Controls (Total, Buttons)
-JPanel controls = new JPanel(new FlowLayout());
-totalLabel = new JLabel("Total: ₹0.00");
-JButton placeOrder = new JButton("Place Order");
-JButton clear = new JButton("Clear Cart");
-JButton removeItem = new JButton("Remove Item");
-controls.add(removeItem);
-controls.add(totalLabel);
-controls.add(placeOrder);
-controls.add(clear);
-cartPanel.add(controls, BorderLayout.SOUTH);
-
-
-    // Actions
-    placeOrder.addActionListener(e -> openPlaceOrderDialog());
-    clear.addActionListener(e -> {
-        substoreCart.clear();
-        updateCartArea();
-    });
-
-    tabbedPane.addTab("Cart", cartAndBooksPanel);
-    JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, booksScroll, cartPanel);
-    splitPane.setDividerLocation(600); // initial width for books
-    splitPane.setResizeWeight(0.7);    // proportion for left component
-    cartAndBooksPanel.add(splitPane, BorderLayout.CENTER);
-
-removeItem.addActionListener(e -> {
-    int selectedRow = cartTable.getSelectedRow();
-    if (selectedRow >= 0 && selectedRow < substoreCart.getItems().size()) {
-        CartItem item = substoreCart.getItems().get(selectedRow);
-
-        // Remove CartItem by index from SubstoreCart
-        if (item.getQuantity() > 1) {
-            // Reduce quantity by 1
-            item.setQuantity(item.getQuantity() - 1);
-        } else {
-            // Quantity is 1, remove item completely
-            substoreCart.getItems().remove(selectedRow);
-        }
-        // Refresh table and total
-        updateCartArea();
-    } else {
-        JOptionPane.showMessageDialog(this, "Select a row to remove.", "Warning", JOptionPane.WARNING_MESSAGE);
-    }
-});
-
-
-    // ---------- Orders Tab ----------
-    tabbedPane.addTab("Orders", orderStatusPanel);
-    orderStatusPanel.refreshOrders();
-
-    add(tabbedPane, BorderLayout.CENTER);
-}
-
-
-    private void refreshSubstoreBooks() {
-    booksPanel.removeAll();
-    List<Book> books = bookDAO.getBooksFromSubstores();
-
-    for (Book b : books) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setPreferredSize(new Dimension(250, 120));
-        JLabel title = new JLabel("<html><b>"+b.getTitle()+"</b></html>");
-        JLabel price = new JLabel("₹"+b.getPrice());
-        JButton add = new JButton("Add");
-
-        add.addActionListener(ae -> {
-            substoreCart.addItem(b, 1);
-            updateCartArea();
+        // Currency formatting
+        cartTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (column == 2 || column == 3) {
+                    setHorizontalAlignment(SwingConstants.RIGHT);
+                    if (value instanceof Double || value instanceof Number) {
+                        setText(String.format("₹%.2f", Double.parseDouble(value.toString())));
+                    }
+                } else {
+                    setHorizontalAlignment(SwingConstants.LEFT);
+                }
+                if (isSelected) {
+                    c.setBackground(new Color(70, 130, 180));
+                    c.setForeground(Color.WHITE);
+                }
+                return c;
+            }
         });
 
-        JPanel info = new JPanel(new GridLayout(3,1));
-        info.add(title);
-        info.add(new JLabel("By: "+b.getAuthor()));
-        info.add(price);
+        cartPanel.add(new JScrollPane(cartTable), BorderLayout.CENTER);
 
-        card.add(info, BorderLayout.CENTER);
-        card.add(add, BorderLayout.SOUTH);
-        booksPanel.add(card);
+        // Cart controls
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        totalLabel = new JLabel("Total: ₹0.00");
+        JButton placeOrder = createStyledButton("Place Order", new Color(46, 125, 50));
+        JButton clear = createStyledButton("Clear Cart", new Color(244, 67, 54));
+        JButton removeItem = createStyledButton("Remove Item", new Color(255, 152, 0));
+        controls.add(removeItem);
+        controls.add(totalLabel);
+        controls.add(placeOrder);
+        controls.add(clear);
+        cartPanel.add(controls, BorderLayout.SOUTH);
+
+        // Actions
+        placeOrder.addActionListener(e -> openPlaceOrderDialog());
+        clear.addActionListener(e -> {
+            substoreCart.clear();
+            updateCartArea();
+        });
+        removeItem.addActionListener(e -> removeSelectedItem());
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, booksScroll, cartPanel);
+        splitPane.setDividerLocation(600);
+        splitPane.setResizeWeight(0.7);
+        cartAndBooksPanel.add(splitPane, BorderLayout.CENTER);
+
+        tabbedPane.addTab("Cart", cartAndBooksPanel);
+        tabbedPane.addTab("Orders", orderStatusPanel);
+        orderStatusPanel.refreshOrders();
+
+        add(tabbedPane, BorderLayout.CENTER);
     }
-    booksPanel.revalidate();
-    booksPanel.repaint();
-}
 
-    public void updateCartArea() {
-        // Clear existing rows
+    private JButton createStyledButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(8, 15, 8, 15));
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) { button.setBackground(color.darker()); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { button.setBackground(color); }
+        });
+        return button;
+    }
+
+    private void refreshSubstoreBooks() {
+        booksPanel.removeAll();
+        List<Book> books = bookDAO.getBooksFromSubstores();
+        for (Book b : books) {
+            JPanel card = new JPanel(new BorderLayout());
+            card.setPreferredSize(new Dimension(250, 140));
+            card.setBorder(new LineBorder(new Color(200, 200, 200), 1, true));
+            card.setBackground(Color.WHITE);
+
+            JLabel title = new JLabel("<html><b>" + b.getTitle() + "</b></html>");
+            JLabel author = new JLabel("By: " + b.getAuthor());
+            JLabel price = new JLabel("₹" + b.getPrice());
+
+            JButton add = createStyledButton("Add", new Color(76, 175, 80));
+            add.addActionListener(e -> {
+                substoreCart.addItem(b, 1);
+                updateCartArea();
+            });
+
+            JPanel info = new JPanel(new GridLayout(3,1));
+            info.add(title); info.add(author); info.add(price);
+
+            card.add(info, BorderLayout.CENTER);
+            card.add(add, BorderLayout.SOUTH);
+            booksPanel.add(card);
+        }
+        booksPanel.revalidate();
+        booksPanel.repaint();
+    }
+
+    private void updateCartArea() {
         cartTableModel.setRowCount(0);
-
         double total = 0;
         for (CartItem item : substoreCart.getItems()) {
             double itemTotal = item.getTotalPrice();
@@ -216,12 +232,22 @@ removeItem.addActionListener(e -> {
                 itemTotal
             });
         }
-
         totalLabel.setText(String.format("Total: ₹%.2f", total));
     }
 
+    private void removeSelectedItem() {
+        int row = cartTable.getSelectedRow();
+        if (row >= 0 && row < substoreCart.getItems().size()) {
+            CartItem item = substoreCart.getItems().get(row);
+            if (item.getQuantity() > 1) item.setQuantity(item.getQuantity() - 1);
+            else substoreCart.getItems().remove(row);
+            updateCartArea();
+        } else {
+            JOptionPane.showMessageDialog(this, "Select a row to remove.", "Warning", JOptionPane.WARNING_MESSAGE);
+        }
+    }
 
-    public void openPlaceOrderDialog() {
+    private void openPlaceOrderDialog() {
         if (substoreCart.getItems().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Cart empty", "Warning", JOptionPane.WARNING_MESSAGE);
             return;
@@ -239,12 +265,10 @@ removeItem.addActionListener(e -> {
         if (res == JOptionPane.OK_OPTION) {
             String phone = phoneField.getText().trim();
             if (phone.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Phone is required for substore order", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Phone is required", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-
             double total = substoreCart.getTotalAmount();
-
             SubstorePaymentOpt pay = new SubstorePaymentOpt(total, () -> {
                 SubstoreOrder order = new SubstoreOrder();
                 order.setOrderNumber("SORD" + System.currentTimeMillis());
@@ -252,14 +276,11 @@ removeItem.addActionListener(e -> {
                 order.setCustomerPhone(phone);
                 order.setTotalAmount(total);
                 order.setOrderStatus("Placed");
-                orderStatusPanel.refreshOrders();
 
                 StringBuilder items = new StringBuilder();
                 for (CartItem item : substoreCart.getItems()) {
                     items.append(item.getBook().getTitle())
-                         .append(" x")
-                         .append(item.getQuantity())
-                         .append(";");
+                         .append(" x").append(item.getQuantity()).append("; ");
                 }
                 order.setItemsSummary(items.toString());
 
@@ -269,12 +290,11 @@ removeItem.addActionListener(e -> {
                         for (CartItem item : substoreCart.getItems()) {
                             bookDAO.reduceStock(item.getBook().getId(), item.getQuantity());
                         }
-                        JOptionPane.showMessageDialog(this, "Order placed! Order ID: " + id);
+                        JOptionPane.showMessageDialog(this, "Order placed! ID: " + id);
                         substoreCart.clear();
                         updateCartArea();
                         refreshSubstoreBooks();
                         orderStatusPanel.refreshOrders();
-
                     } else {
                         JOptionPane.showMessageDialog(this, "Failed to save order", "Error", JOptionPane.ERROR_MESSAGE);
                     }
@@ -286,8 +306,4 @@ removeItem.addActionListener(e -> {
             pay.setVisible(true);
         }
     }
-    public SubstoreCart getSubstoreCart() {
-        return substoreCart;
-    }
-
 }

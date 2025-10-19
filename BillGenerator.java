@@ -1,4 +1,3 @@
-// BillGenerator.java
 import javax.swing.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,10 +17,16 @@ public class BillGenerator {
 
     public void generateBill() {
         String billContent = generateBillContent();
-        JOptionPane.showMessageDialog(null, 
-            "<html><pre>" + billContent + "</pre></html>", 
-            "BiblioFlow - Bill", 
-            JOptionPane.INFORMATION_MESSAGE);
+
+        JTextArea textArea = new JTextArea(billContent);
+        textArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 14));
+        textArea.setEditable(false);
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new java.awt.Dimension(400, 500));
+
+        JOptionPane.showMessageDialog(null, scrollPane, 
+            "BiblioFlow - Bill", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private String generateBillContent() {
@@ -45,7 +50,6 @@ public class BillGenerator {
         bill.append("--------------------------------\n");
         bill.append("Total Amount: ₹").append(String.format("%.2f", totalAmount)).append("\n");
         
-        // Calculate GST (18%)
         double gst = totalAmount * 0.18;
         bill.append("GST (18%): ₹").append(String.format("%.2f", gst)).append("\n");
         

@@ -1,4 +1,3 @@
-// PaymentOpt.java
 import javax.swing.*;
 import java.awt.*;
 
@@ -8,7 +7,6 @@ public class PaymentOpt extends JFrame {
     private String customerName;
     private String customerPhone;
 
-    // Updated constructor to match your usage
     public PaymentOpt(double totalAmount, Runnable onPaymentSuccess) {
         this(totalAmount, onPaymentSuccess, "", "");
     }
@@ -28,58 +26,69 @@ public class PaymentOpt extends JFrame {
     }
 
     private void initUI() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        JPanel panel = new JPanel(new BorderLayout(15, 15)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                GradientPaint gp = new GradientPaint(
+                        0, 0, new Color(250, 240, 230),
+                        0, getHeight(), new Color(230, 200, 180)
+                );
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(new Color(240, 248, 255));
 
         // Header
         JLabel amountLabel = new JLabel("Total Amount: ₹" + String.format("%.2f", totalAmount), SwingConstants.CENTER);
-        amountLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        amountLabel.setForeground(new Color(70, 130, 180));
+        amountLabel.setFont(new Font("Georgia", Font.BOLD, 22));
+        amountLabel.setForeground(new Color(80, 50, 40));
+
+        if (customerName != null && !customerName.trim().isEmpty()) {
+            applyLoyaltyDiscount(customerName, amountLabel);
+        }
+
         panel.add(amountLabel, BorderLayout.NORTH);
 
-        // Payment Options
+        // Payment options
         JPanel options = new JPanel(new GridLayout(4, 1, 15, 15));
-        options.setBackground(new Color(240, 248, 255));
+        options.setOpaque(false);
 
-        JButton upiBtn = createStyledButton("Pay via UPI", new Color(76, 175, 80));
-        JButton netBtn = createStyledButton("Pay via Net Banking", new Color(33, 150, 243));
-        JButton cashBtn = createStyledButton("Pay via Cash", new Color(255, 152, 0));
-        JButton cardBtn = createStyledButton("Pay via Card", new Color(156, 39, 176));
+        JButton upiBtn = createStyledButton("Pay via UPI", new Color(150, 90, 60));
+        JButton netBtn = createStyledButton("Pay via Net Banking", new Color(120, 70, 50));
+        JButton cashBtn = createStyledButton("Pay via Cash", new Color(160, 110, 80));
+        JButton cardBtn = createStyledButton("Pay via Card", new Color(110, 70, 50));
 
         options.add(upiBtn);
         options.add(netBtn);
         options.add(cashBtn);
         options.add(cardBtn);
-        
-        JScrollPane optionsScroll = new JScrollPane(options);
-        panel.add(optionsScroll, BorderLayout.CENTER);
 
-        // Bottom Panel
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        bottomPanel.setBackground(new Color(240, 248, 255));
+        panel.add(options, BorderLayout.CENTER);
 
-        JButton printBtn = createStyledButton("Print Bill", new Color(46, 125, 50));
+        // Bottom panel
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+        bottomPanel.setOpaque(false);
+
+        JButton printBtn = createStyledButton("Print Bill", new Color(120, 70, 50));
         printBtn.setEnabled(false);
-
-        JButton closeBtn = createStyledButton("Close", new Color(244, 67, 54));
+        JButton closeBtn = createStyledButton("Close", new Color(180, 80, 60));
 
         bottomPanel.add(printBtn);
         bottomPanel.add(closeBtn);
         panel.add(bottomPanel, BorderLayout.SOUTH);
 
-        // Payment handlers
+        // Action listeners
         upiBtn.addActionListener(e -> handleUPIPayment(printBtn));
         netBtn.addActionListener(e -> handleNetBankingPayment(printBtn));
         cashBtn.addActionListener(e -> handleCashPayment(printBtn));
         cardBtn.addActionListener(e -> handleCardPayment(printBtn));
-
-        // Print bill
         printBtn.addActionListener(e -> {
             printBill();
             this.dispose();
         });
-
         closeBtn.addActionListener(e -> this.dispose());
 
         add(panel);
@@ -87,47 +96,64 @@ public class PaymentOpt extends JFrame {
 
     private JButton createStyledButton(String text, Color color) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setFont(new Font("Georgia", Font.BOLD, 16));
         button.setBackground(color);
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(200, 50));
+        button.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
         return button;
     }
+
+    // -------------------------
+    // PAYMENT HANDLERS (all dialogs restyled)
+    // -------------------------
 
     private void handleUPIPayment(JButton printBtn) {
         JDialog qrDialog = new JDialog(this, "Scan QR Code", true);
         qrDialog.setSize(400, 500);
         qrDialog.setLocationRelativeTo(this);
 
-        JPanel qrPanel = new JPanel(new BorderLayout());
+        JPanel qrPanel = new JPanel(new BorderLayout(10, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(new Color(250, 240, 230));
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
         qrPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Load image as an Icon
         ImageIcon qrIcon = new ImageIcon("D:\\java project new\\JAVA Project\\BiblioFlow\\imgs\\qr.jpg");
-
-        // Optional: scale the image to fit the label
         Image img = qrIcon.getImage().getScaledInstance(300, 300, Image.SCALE_SMOOTH);
         qrIcon = new ImageIcon(img);
 
-        // Create JLabel with the image
         JLabel qrLabel = new JLabel(qrIcon, SwingConstants.CENTER);
-        qrLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+        qrLabel.setBorder(BorderFactory.createLineBorder(new Color(150, 90, 60), 2));
         qrLabel.setPreferredSize(new Dimension(300, 300));
 
         JLabel instruction = new JLabel("Scan the QR code with your UPI app", SwingConstants.CENTER);
-        instruction.setFont(new Font("Arial", Font.PLAIN, 14));
+        instruction.setFont(new Font("Georgia", Font.PLAIN, 14));
+        instruction.setForeground(new Color(80, 50, 40));
 
-        JButton confirmBtn = new JButton("Payment Done");
-        confirmBtn.setBackground(new Color(76, 175, 80));
-        confirmBtn.setForeground(Color.WHITE);
+        JButton confirmBtn = createStyledButton("Payment Done", new Color(150, 90, 60));
         confirmBtn.addActionListener(e -> {
             completePayment("UPI", printBtn);
             qrDialog.dispose();
         });
 
-        qrPanel.add(qrLabel, BorderLayout.CENTER);
         qrPanel.add(instruction, BorderLayout.NORTH);
+        qrPanel.add(qrLabel, BorderLayout.CENTER);
         qrPanel.add(confirmBtn, BorderLayout.SOUTH);
 
         qrDialog.add(qrPanel);
@@ -135,42 +161,49 @@ public class PaymentOpt extends JFrame {
     }
 
     private void handleNetBankingPayment(JButton printBtn) {
-        JDialog netBankingDialog = new JDialog(this, "Net Banking", true);
-        netBankingDialog.setSize(400, 300);
-        netBankingDialog.setLocationRelativeTo(this);
+        JDialog netDialog = new JDialog(this, "Net Banking", true);
+        netDialog.setSize(400, 300);
+        netDialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        JPanel panel = new JPanel(new BorderLayout(10, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(new Color(250, 240, 230));
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         JTextArea procedure = new JTextArea(
-            "Net Banking Procedure:\n\n" +
-            "1. Select your bank\n" +
-            "2. Enter your credentials\n" +
-            "3. Authorize payment\n" +
-            "4. Wait for confirmation\n\n" +
-            "Click 'Payment Done' after completing the process."
+                "Net Banking Procedure:\n\n" +
+                        "1. Select your bank\n" +
+                        "2. Enter your credentials\n" +
+                        "3. Authorize payment\n" +
+                        "4. Wait for confirmation\n\n" +
+                        "Click 'Payment Done' after completing the process."
         );
+        procedure.setFont(new Font("Georgia", Font.PLAIN, 14));
         procedure.setEditable(false);
-        procedure.setFont(new Font("Arial", Font.PLAIN, 14));
+        procedure.setBackground(new Color(250, 240, 230));
+        procedure.setForeground(new Color(80, 50, 40));
 
-        JButton confirmBtn = new JButton("Payment Done");
+        JButton confirmBtn = createStyledButton("Payment Done", new Color(120, 70, 50));
         confirmBtn.addActionListener(e -> {
             completePayment("Net Banking", printBtn);
-            netBankingDialog.dispose();
+            netDialog.dispose();
         });
 
         panel.add(new JScrollPane(procedure), BorderLayout.CENTER);
         panel.add(confirmBtn, BorderLayout.SOUTH);
-
-        netBankingDialog.add(panel);
-        netBankingDialog.setVisible(true);
+        netDialog.add(panel);
+        netDialog.setVisible(true);
     }
 
     private void handleCashPayment(JButton printBtn) {
         int confirm = JOptionPane.showConfirmDialog(this,
-            "Confirm cash payment of ₹" + String.format("%.2f", totalAmount) + "?",
-            "Cash Payment", JOptionPane.YES_NO_OPTION);
-        
+                "Confirm cash payment of ₹" + String.format("%.2f", totalAmount) + "?",
+                "Cash Payment", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             completePayment("Cash", printBtn);
         }
@@ -181,7 +214,14 @@ public class PaymentOpt extends JFrame {
         cardDialog.setSize(400, 300);
         cardDialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(new Color(250, 240, 230));
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         panel.add(new JLabel("Card Number:"));
@@ -200,7 +240,7 @@ public class PaymentOpt extends JFrame {
         JTextField holderField = new JTextField();
         panel.add(holderField);
 
-        JButton confirmBtn = new JButton("Process Payment");
+        JButton confirmBtn = createStyledButton("Process Payment", new Color(150, 90, 60));
         confirmBtn.addActionListener(e -> {
             completePayment("Card", printBtn);
             cardDialog.dispose();
@@ -211,22 +251,49 @@ public class PaymentOpt extends JFrame {
         cardDialog.setVisible(true);
     }
 
+    // -------------------------
+    // LOGIC METHODS (unchanged)
+    // -------------------------
     private void completePayment(String method, JButton printBtn) {
-        JOptionPane.showMessageDialog(this,
-            method + " Payment Successful!\nAmount Paid: ₹" + String.format("%.2f", totalAmount),
-            "Payment Success", JOptionPane.INFORMATION_MESSAGE);
+        if (customerName != null && !customerName.trim().isEmpty()) {
+            CustomerLoyaltyService loyaltyService = new CustomerLoyaltyService(new BillDAO());
+            int pointsEarned = loyaltyService.calculateLoyaltyPoints(customerName, totalAmount);
+            loyaltyService.updateCustomerAfterPurchase(customerName, totalAmount);
 
-        printBtn.setEnabled(true);
-
-        if (onPaymentSuccess != null) {
-            onPaymentSuccess.run();
+            CustomerLoyaltyService.CustomerLoyalty loyalty = loyaltyService.getCustomerLoyalty(customerName);
+            String message;
+            if (loyalty != null) {
+                message = String.format("%s Payment Successful!\nAmount Paid: ₹%.2f\nLoyalty Points Earned: %d\nTotal Points: %d\nCustomer Tier: %s",
+                        method, totalAmount, pointsEarned, loyalty.getTotalPoints(), loyalty.getTier());
+            } else {
+                message = String.format("%s Payment Successful!\nAmount Paid: ₹%.2f", method, totalAmount);
+            }
+            JOptionPane.showMessageDialog(this, message, "Payment Success", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, method + " Payment Successful!\nAmount Paid: ₹" + String.format("%.2f", totalAmount),
+                    "Payment Success", JOptionPane.INFORMATION_MESSAGE);
         }
+        printBtn.setEnabled(true);
+        if (onPaymentSuccess != null) onPaymentSuccess.run();
     }
 
     private void printBill() {
         BillGenerator billGenerator = new BillGenerator(totalAmount, customerName, customerPhone);
         billGenerator.generateBill();
-        
         JOptionPane.showMessageDialog(this, "🖨 Bill printed successfully!");
+    }
+
+    private void applyLoyaltyDiscount(String customerName, JLabel amountLabel) {
+        if (customerName == null || customerName.trim().isEmpty()) return;
+        CustomerLoyaltyService loyaltyService = new CustomerLoyaltyService(new BillDAO());
+        double discount = loyaltyService.calculateDiscount(customerName, totalAmount);
+        if (discount > 0) {
+            double discountedAmount = totalAmount - discount;
+            String customerTier = loyaltyService.getCustomerTier(customerName);
+            JOptionPane.showMessageDialog(this, String.format("🎉 Loyalty Discount Applied!\nCustomer Tier: %s\nOriginal Amount: ₹%.2f\nDiscount: ₹%.2f\nFinal Amount: ₹%.2f",
+                    customerTier, totalAmount, discount, discountedAmount), "Loyalty Discount", JOptionPane.INFORMATION_MESSAGE);
+            totalAmount = discountedAmount;
+            amountLabel.setText("Total Amount: ₹" + String.format("%.2f", totalAmount));
+        }
     }
 }

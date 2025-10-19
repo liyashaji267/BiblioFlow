@@ -1,76 +1,336 @@
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.table.*;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableRowSorter;
+import javax.swing.RowSorter.SortKey;
+import javax.swing.SortOrder;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class BillHistoryPanel extends JPanel {
+
     private JTable table;
-    private BillDAO billDAO = new BillDAO();
     private DefaultTableModel tableModel;
     private JTable itemsTable;
     private DefaultTableModel itemsTableModel;
+    private BillDAO billDAO = new BillDAO();
     private List<Bill> bills;
-
-
-    private void initItemsTable() {
-        String[] itemColumns = {"Book Name", "Quantity"};
-        itemsTableModel = new DefaultTableModel(itemColumns, 0);
-        itemsTable = new JTable(itemsTableModel);
-    }
+    private JButton refreshBtn;
 
     public BillHistoryPanel() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(15, 15));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         
-        // Create table model
-        String[] columns = {"Bill No", "Customer", "Amount", "Date", "Status"};
-        tableModel = new DefaultTableModel(columns, 0);
-        table = new JTable(tableModel);
+        // Main background with gradient
+        JPanel mainPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                GradientPaint gp = new GradientPaint(
+                        0, 0, new Color(250, 240, 230),
+                        0, getHeight(), new Color(230, 200, 180)
+                );
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        mainPanel.setOpaque(false);
+        setOpaque(false);
+
+        // Header with beautiful styling
+        JLabel headerLabel = new JLabel("📋 Bill History", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Georgia", Font.BOLD, 32));
+        headerLabel.setForeground(new Color(80, 50, 40));
+        headerLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
+        mainPanel.add(headerLabel, BorderLayout.NORTH);
+
+        initMainTable();
+        initItemsTable();
+
+        // Refresh button
+        refreshBtn = createStyledButton("Refresh Bills", new Color(150, 90, 60));
+        refreshBtn.addActionListener(e -> refresh());
         
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(refreshBtn);
+
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        add(mainPanel);
+
         refresh();
+    }
+
+    private JButton createStyledButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Georgia", Font.BOLD, 14));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(color.darker(), 2),
+            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+        ));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        // Hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+        
+        return button;
+    }
+
+    private void initMainTable() {
+        String[] columns = {"Bill No", "Customer", "Amount", "Date", "Status"};
+        tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // All cells read-only
+            }
+        };
+
+        table = new JTable(tableModel);
+        styleMainTable(table);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(150, 90, 60)), 
+                "All Bills",
+                javax.swing.border.TitledBorder.LEFT,
+                javax.swing.border.TitledBorder.TOP,
+                new Font("Georgia", Font.BOLD, 16),
+                new Color(80, 50, 40)
+            ),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        scrollPane.getViewport().setBackground(new Color(250, 240, 230));
+        
+        add(scrollPane, BorderLayout.CENTER);
 
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int row = table.getSelectedRow();
-                if (row >= 0) {
-                    int billId = (int) bills.get(row).getId(); // Assuming Bill has getId()
+                if (row >= 0 && bills != null && row < bills.size()) {
+                    int billId = bills.get(row).getId();
                     showBillItems(billId);
                 }
             }
         });
+    }
 
+    private void styleMainTable(JTable table) {
+        table.setFont(new Font("Arial", Font.PLAIN, 14));
+        table.setRowHeight(32);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setGridColor(new Color(200, 180, 160));
+        table.setBackground(new Color(255, 250, 245));
+        table.setForeground(new Color(80, 50, 40));
+        table.setShowGrid(true);
+        table.setIntercellSpacing(new Dimension(1, 1));
+
+        // Simple alignment using fully qualified names
+        javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        javax.swing.table.DefaultTableCellRenderer leftRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
+
+        table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer); // Bill No
+        table.getColumnModel().getColumn(1).setCellRenderer(leftRenderer);   // Customer
+        table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer); // Amount
+        table.getColumnModel().getColumn(3).setCellRenderer(centerRenderer); // Date
+        table.getColumnModel().getColumn(4).setCellRenderer(centerRenderer); // Status
+
+        // Header styling
+        JTableHeader header = table.getTableHeader();
+        header.setFont(new Font("Georgia", Font.BOLD, 14));
+        header.setBackground(new Color(150, 90, 60));
+        header.setForeground(Color.WHITE);
+        header.setReorderingAllowed(false);
+        header.setPreferredSize(new Dimension(header.getWidth(), 35));
+    }
+
+    private void initItemsTable() {
+        String[] itemColumns = {"Book Name", "Quantity", "Price"};
+        itemsTableModel = new DefaultTableModel(itemColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        itemsTable = new JTable(itemsTableModel);
+        styleItemsTable(itemsTable);
+    }
+
+    private void styleItemsTable(JTable table) {
+        table.setFont(new Font("Arial", Font.PLAIN, 13));
+        table.setRowHeight(26);
+        table.setGridColor(new Color(200, 180, 160));
+        table.setBackground(new Color(255, 250, 245));
+        table.setForeground(new Color(80, 50, 40));
+        
+        // Simple alignment using fully qualified names
+        javax.swing.table.DefaultTableCellRenderer leftRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
+        javax.swing.table.DefaultTableCellRenderer rightRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        table.getColumnModel().getColumn(0).setCellRenderer(leftRenderer);  // Book Name
+        table.getColumnModel().getColumn(1).setCellRenderer(rightRenderer); // Quantity
+        table.getColumnModel().getColumn(2).setCellRenderer(rightRenderer); // Price
+
+        JTableHeader header = table.getTableHeader();
+        header.setFont(new Font("Georgia", Font.BOLD, 13));
+        header.setBackground(new Color(150, 90, 60));
+        header.setForeground(Color.WHITE);
+        header.setReorderingAllowed(false);
     }
 
     private void showBillItems(int billId) {
-        List<BillItem> items = billDAO.getBillItemsByBillId(billId); // implement this in BillDAO
-        itemsTableModel.setRowCount(0);
-        for (BillItem item : items) {
-            itemsTableModel.addRow(new Object[]{item.getBookName(), item.getQuantity()});
+        try {
+            List<BillItem> items = billDAO.getBillItemsByBillId(billId);
+            itemsTableModel.setRowCount(0);
+
+            double totalAmount = 0;
+            for (BillItem item : items) {
+                double itemTotal = item.getPrice() * item.getQuantity();
+                totalAmount += itemTotal;
+                itemsTableModel.addRow(new Object[]{
+                    item.getBookName(), 
+                    item.getQuantity(),
+                    String.format("₹%.2f", item.getPrice())
+                });
+            }
+
+            // Create a detailed view panel
+            JPanel detailsPanel = new JPanel(new BorderLayout(10, 10));
+            detailsPanel.setBackground(new Color(250, 240, 230));
+            detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+            // Bill summary
+            Bill bill = billDAO.getBillByNumber(bills.stream()
+                .filter(b -> b.getId() == billId)
+                .findFirst()
+                .map(Bill::getBillNumber)
+                .orElse(""));
+
+            if (bill != null) {
+                JPanel summaryPanel = new JPanel(new GridLayout(0, 2, 10, 5));
+                summaryPanel.setBackground(new Color(250, 240, 230));
+                summaryPanel.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(150, 90, 60)),
+                    "Bill Summary",
+                    javax.swing.border.TitledBorder.LEFT,
+                    javax.swing.border.TitledBorder.TOP,
+                    new Font("Georgia", Font.BOLD, 14),
+                    new Color(80, 50, 40)
+                ));
+
+                summaryPanel.add(createSummaryLabel("Bill Number:"));
+                summaryPanel.add(createSummaryValue(bill.getBillNumber()));
+                summaryPanel.add(createSummaryLabel("Customer:"));
+                summaryPanel.add(createSummaryValue(bill.getCustomerName()));
+                summaryPanel.add(createSummaryLabel("Date:"));
+                summaryPanel.add(createSummaryValue(bill.getDate()));
+                summaryPanel.add(createSummaryLabel("Status:"));
+                summaryPanel.add(createSummaryValue(bill.getPaymentStatus()));
+                summaryPanel.add(createSummaryLabel("Total Amount:"));
+                summaryPanel.add(createSummaryValue(String.format("₹%.2f", totalAmount)));
+
+                detailsPanel.add(summaryPanel, BorderLayout.NORTH);
+            }
+
+            // Items table
+            JScrollPane itemsScroll = new JScrollPane(itemsTable);
+            itemsScroll.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(150, 90, 60)),
+                "Items Purchased",
+                javax.swing.border.TitledBorder.LEFT,
+                javax.swing.border.TitledBorder.TOP,
+                new Font("Georgia", Font.BOLD, 14),
+                new Color(80, 50, 40)
+            ));
+            itemsScroll.setPreferredSize(new Dimension(500, 250));
+
+            detailsPanel.add(itemsScroll, BorderLayout.CENTER);
+
+            JOptionPane.showMessageDialog(this,
+                    detailsPanel,
+                    "Bill Details - " + bill.getBillNumber(),
+                    JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error loading bill items: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
-    
-        // show in a dialog
-        JOptionPane.showMessageDialog(this, new JScrollPane(itemsTable), 
-            "Bill Details", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    private JLabel createSummaryLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Georgia", Font.BOLD, 12));
+        label.setForeground(new Color(80, 50, 40));
+        return label;
+    }
+
+    private JLabel createSummaryValue(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Arial", Font.PLAIN, 12));
+        label.setForeground(new Color(80, 50, 40));
+        return label;
+    }
 
     public void refresh() {
-    tableModel.setRowCount(0);
-    List<Bill> bills = billDAO.getAllBills();
-    bills = billDAO.getAllBills(); // store for later use
+        tableModel.setRowCount(0);
+        try {
+            bills = billDAO.getAllBills();
+            for (Bill b : bills) {
+                tableModel.addRow(new Object[]{
+                        b.getBillNumber(),
+                        b.getCustomerName(),
+                        String.format("₹%.2f", b.getFinalAmount()),
+                        b.getDate(),
+                        b.getPaymentStatus()
+                });
+            }
 
-    for (Bill b : bills) {
-        tableModel.addRow(new Object[]{
-            b.getBillNumber(),
-            b.getCustomerName(),
-            "₹" + b.getFinalAmount(),
-            b.getDate(),
-            b.getPaymentStatus()
-        });
+            if (!bills.isEmpty()) {
+                TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
+                table.setRowSorter(sorter);
+                List<SortKey> sortKeys = new ArrayList<>();
+                sortKeys.add(new SortKey(3, SortOrder.DESCENDING)); // Sort by Date column
+                sorter.setSortKeys(sortKeys);
+                
+                JOptionPane.showMessageDialog(this, 
+                    "Loaded " + bills.size() + " bills successfully!", 
+                    "Refresh Complete", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "No bills found in the database.", 
+                    "Information", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error loading bill history: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
-}
-
-
 }

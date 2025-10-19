@@ -29,6 +29,7 @@ javac -cp "lib/*" -d out ^
     BookstoreLogin.java ^
     MainApplication.java ^
     frontpage.java ^
+    BookstoreUI.java ^
     ScanBarcodePanel.java ^
     DarkLightSwitch.java ^
     SubstoreCartPanel.java ^
@@ -41,7 +42,15 @@ javac -cp "lib/*" -d out ^
     ExportReportsApp.java ^
     SalesReportApp.java ^
     ProfitLossApp.java ^
-    StoreReports.java
+    StoreReports.java ^
+    Transaction.java ^
+    TransactionHistoryPanel.java ^
+    RegularCustomerDiscount.java ^
+    ManualBillEntryPanel.java ^
+    CustomerLoyaltyPanel.java ^
+    CustomerLoyaltyService.java ^
+    LoyaltyProgramUI.java ^
+    LoyaltyAndDiscountUI.java
 
 
 if errorlevel 1 (

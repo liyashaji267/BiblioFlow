@@ -1,47 +1,100 @@
-import javax.swing.*;
 import java.awt.*;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.event.*;
+import java.io.FileOutputStream;
 import java.util.*;
-import java.io.*;
+// Apache POI imports
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
+// iText PDF imports
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
 
 public class ExportReportsApp extends JFrame {
     private JTextField bookField, quantityField;
     private JButton addBtn, exportExcelBtn, exportPdfBtn;
+    private JTable salesTable;
+    private DefaultTableModel tableModel;
     private HashMap<String, Integer> salesMap = new HashMap<>();
 
     public ExportReportsApp() {
-        setTitle("Export Reports Example");
-        setSize(450, 250);
+        setTitle("Export Reports");
+        setSize(600, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new FlowLayout());
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10, 10));
 
-        // Input fields
-        add(new JLabel("Book Name:"));
+        // Header
+        JLabel header = new JLabel("Sales Report Exporter", SwingConstants.CENTER);
+        header.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 24));
+        header.setForeground(new java.awt.Color(33, 150, 243));
+        add(header, BorderLayout.NORTH);
+
+        // Input panel
+        JPanel inputPanel = new JPanel(new GridBagLayout());
+        inputPanel.setBorder(BorderFactory.createTitledBorder("Add Sale"));
+        inputPanel.setBackground(java.awt.Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5,5,5,5);
+
+        gbc.gridx = 0; gbc.gridy = 0;
+        inputPanel.add(new JLabel("Book Name:"), gbc);
+        gbc.gridx = 1;
         bookField = new JTextField(20);
-        add(bookField);
+        inputPanel.add(bookField, gbc);
 
-        add(new JLabel("Quantity Sold:"));
+        gbc.gridx = 0; gbc.gridy = 1;
+        inputPanel.add(new JLabel("Quantity Sold:"), gbc);
+        gbc.gridx = 1;
         quantityField = new JTextField(5);
-        add(quantityField);
+        inputPanel.add(quantityField, gbc);
 
-        // Buttons
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
         addBtn = new JButton("Add Sale");
+        styleButton(addBtn, new java.awt.Color(76, 175, 80));
+        inputPanel.add(addBtn, gbc);
+
+        add(inputPanel, BorderLayout.WEST);
+
+        // Table panel
+        String[] columns = {"Book Name", "Quantity Sold"};
+        tableModel = new DefaultTableModel(columns, 0);
+        salesTable = new JTable(tableModel);
+        salesTable.setFillsViewportHeight(true);
+        salesTable.setRowHeight(25);
+        JScrollPane tableScroll = new JScrollPane(salesTable);
+        tableScroll.setBorder(BorderFactory.createTitledBorder("Current Sales"));
+        add(tableScroll, BorderLayout.CENTER);
+
+        // Export buttons panel
+        JPanel exportPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        exportPanel.setBackground(java.awt.Color.WHITE);
         exportExcelBtn = new JButton("Export to Excel");
         exportPdfBtn = new JButton("Export to PDF");
-        add(addBtn);
-        add(exportExcelBtn);
-        add(exportPdfBtn);
+        styleButton(exportExcelBtn, new java.awt.Color(33, 150, 243));
+        styleButton(exportPdfBtn, new java.awt.Color(255, 193, 7));
+        exportPanel.add(exportExcelBtn);
+        exportPanel.add(exportPdfBtn);
+        add(exportPanel, BorderLayout.SOUTH);
 
-        // Button actions
+        // Action listeners
         addBtn.addActionListener(e -> addSale());
         exportExcelBtn.addActionListener(e -> exportExcel());
         exportPdfBtn.addActionListener(e -> exportPDF());
 
+        getContentPane().setBackground(java.awt.Color.WHITE);
         setVisible(true);
+    }
+
+    private void styleButton(JButton button, java.awt.Color bgColor) {
+        button.setBackground(bgColor);
+        button.setForeground(java.awt.Color.WHITE);
+        button.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
     }
 
     private void addSale() {
@@ -53,6 +106,20 @@ public class ExportReportsApp extends JFrame {
         try {
             int qty = Integer.parseInt(quantityField.getText().trim());
             salesMap.put(book, salesMap.getOrDefault(book, 0) + qty);
+
+            // Update table
+            boolean found = false;
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                if (tableModel.getValueAt(i, 0).equals(book)) {
+                    tableModel.setValueAt(salesMap.get(book), i, 1);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                tableModel.addRow(new Object[]{book, qty});
+            }
+
             JOptionPane.showMessageDialog(this, "Sale added!");
             bookField.setText("");
             quantityField.setText("");
@@ -89,10 +156,13 @@ public class ExportReportsApp extends JFrame {
         try {
             PdfWriter.getInstance(document, new FileOutputStream("SalesReport.pdf"));
             document.open();
-            document.add(new Paragraph("Sales Report\n\n"));
+            
+            // Use iText Font with fully qualified name
+            com.itextpdf.text.Font pdfFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 12, com.itextpdf.text.Font.NORMAL);
+            document.add(new Paragraph("Sales Report\n\n", pdfFont));
 
             for (Map.Entry<String, Integer> entry : salesMap.entrySet()) {
-                document.add(new Paragraph("Book: " + entry.getKey() + " - Quantity Sold: " + entry.getValue()));
+                document.add(new Paragraph("Book: " + entry.getKey() + " - Quantity Sold: " + entry.getValue(), pdfFont));
             }
 
             document.close();

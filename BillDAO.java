@@ -1,6 +1,8 @@
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BillDAO {
 
@@ -296,5 +298,156 @@ public Bill getBillByNumber(String billNumber) {
                 this.revenue = revenue;
             }
         }
+
+    
+    public boolean createTransaction(int billId, String paymentMethod, double amount, String status) {
+        String sql = "INSERT INTO transactions (bill_id, payment_method, amount, status, transaction_date) VALUES (?, ?, ?, ?, NOW())";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, billId);
+            stmt.setString(2, paymentMethod);
+            stmt.setDouble(3, amount);
+            stmt.setString(4, status);
+            
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    public List<Transaction> getTransactionHistory() {
+        List<Transaction> transactions = new ArrayList<>();
+        String sql = "SELECT t.*, b.bill_number, b.customer_name " +
+                    "FROM transactions t " +
+                    "JOIN bills b ON t.bill_id = b.id " +
+                    "ORDER BY t.transaction_date DESC";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                Transaction transaction = new Transaction();
+                transaction.setId(rs.getInt("id"));
+                transaction.setBillId(rs.getInt("bill_id"));
+                transaction.setBillNumber(rs.getString("bill_number"));
+                transaction.setCustomerName(rs.getString("customer_name"));
+                transaction.setPaymentMethod(rs.getString("payment_method"));
+                transaction.setAmount(rs.getDouble("amount"));
+                transaction.setStatus(rs.getString("status"));
+                transaction.setTransactionDate(rs.getTimestamp("transaction_date"));
+                transactions.add(transaction);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return transactions;
+    }
+    
+    public int getLastInsertedBillId() {
+        String sql = "SELECT LAST_INSERT_ID()";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    // Add these methods to your BillDAO class
+
+public Map<String, Double> getCustomerPurchaseHistory() {
+    Map<String, Double> customerTotals = new HashMap<>();
+    String sql = "SELECT customer_name, SUM(final_amount) as total_spent " +
+                 "FROM bills GROUP BY customer_name";
+    
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
+        
+        while (rs.next()) {
+            String customerName = rs.getString("customer_name");
+            double totalSpent = rs.getDouble("total_spent");
+            customerTotals.put(customerName, totalSpent);
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return customerTotals;
+}
+
+public double getCustomerTotalSpent(String customerName) {
+    String sql = "SELECT SUM(final_amount) as total_spent FROM bills WHERE customer_name = ?";
+    
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, customerName);
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getDouble("total_spent");
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return 0.0;
+}
+
+public int getCustomerPurchaseCount(String customerName) {
+    String sql = "SELECT COUNT(*) as purchase_count FROM bills WHERE customer_name = ?";
+    
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, customerName);
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("purchase_count");
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return 0;
+}
+
+public List<Bill> getCustomerBills(String customerName) {
+    List<Bill> bills = new ArrayList<>();
+    String sql = "SELECT id, bill_number, customer_name, customer_phone, total_amount, gst_amount, final_amount, payment_status, order_status, created_at " +
+                 "FROM bills WHERE customer_name = ? ORDER BY created_at DESC";
+    
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, customerName);
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Bill bill = new Bill();
+                bill.setId(rs.getInt("id"));
+                bill.setBillNumber(rs.getString("bill_number"));
+                bill.setCustomerName(rs.getString("customer_name"));
+                bill.setCustomerPhone(rs.getString("customer_phone"));
+                bill.setTotalAmount(rs.getDouble("total_amount"));
+                bill.setGstAmount(rs.getDouble("gst_amount"));
+                bill.setFinalAmount(rs.getDouble("final_amount"));
+                bill.setPaymentStatus(rs.getString("payment_status"));
+                bill.setOrderStatus(rs.getString("order_status"));
+                bill.setDate(rs.getString("created_at"));
+                bills.add(bill);
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return bills;
+}
 
 }
