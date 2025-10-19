@@ -11,6 +11,8 @@ public class TransactionHistoryPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable transactionTable;
     private BillDAO billDAO;
+    private JButton refreshBtn;
+    private JButton exportBtn;
 
     public TransactionHistoryPanel() {
         this.billDAO = new BillDAO();
@@ -21,11 +23,13 @@ public class TransactionHistoryPanel extends JPanel {
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBackground(new Color(250, 240, 230));
 
         // ---------- TITLE ----------
         JLabel titleLabel = new JLabel("Transaction History", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Georgia", Font.BOLD, 24));
+        titleLabel.setFont(new Font("Georgia", Font.BOLD, 32));
         titleLabel.setForeground(new Color(80, 50, 40));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
         add(titleLabel, BorderLayout.NORTH);
 
         // ---------- TABLE ----------
@@ -39,12 +43,22 @@ public class TransactionHistoryPanel extends JPanel {
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) return Integer.class; // Transaction ID
+                if (columnIndex == 4) return Double.class;  // Amount
+                return String.class;
+            }
         };
 
         transactionTable = new JTable(tableModel);
         transactionTable.setRowHeight(28);
         transactionTable.setFillsViewportHeight(true);
         transactionTable.setAutoCreateRowSorter(true);
+        transactionTable.setBackground(new Color(255, 250, 245));
+        transactionTable.setForeground(new Color(80, 50, 40));
+        transactionTable.setGridColor(new Color(200, 180, 160));
 
         // Custom renderer for status and selected row
         transactionTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
@@ -55,21 +69,21 @@ public class TransactionHistoryPanel extends JPanel {
 
                 if (column == 5) { // Status column
                     String status = value.toString();
-                    if ("SUCCESS".equalsIgnoreCase(status)) {
+                    if ("SUCCESS".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || "PAID".equalsIgnoreCase(status)) {
                         c.setBackground(new Color(200, 255, 200));
                         c.setForeground(Color.BLACK);
-                    } else if ("FAILED".equalsIgnoreCase(status)) {
+                    } else if ("FAILED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
                         c.setBackground(new Color(255, 200, 200));
                         c.setForeground(Color.BLACK);
                     } else if ("PENDING".equalsIgnoreCase(status)) {
                         c.setBackground(new Color(255, 255, 200));
                         c.setForeground(Color.BLACK);
                     } else {
-                        c.setBackground(new Color(245, 235, 220));
+                        c.setBackground(new Color(255, 250, 245));
                         c.setForeground(new Color(80, 50, 40));
                     }
                 } else {
-                    c.setBackground(new Color(245, 235, 220));
+                    c.setBackground(new Color(255, 250, 245));
                     c.setForeground(new Color(80, 50, 40));
                 }
 
@@ -93,15 +107,16 @@ public class TransactionHistoryPanel extends JPanel {
             BorderFactory.createLineBorder(new Color(150, 90, 60)), "All Transactions", 
             TitledBorder.LEADING, TitledBorder.TOP, new Font("Georgia", Font.BOLD, 14), new Color(80, 50, 40)
         ));
+        scrollPane.getViewport().setBackground(new Color(250, 240, 230));
 
         // ---------- CONTROL PANEL ----------
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        controlPanel.setBackground(new Color(245, 235, 220));
+        controlPanel.setBackground(new Color(250, 240, 230));
 
-        JButton refreshBtn = createStyledButton("Refresh", new Color(150, 90, 60));
+        refreshBtn = createStyledButton("Refresh", new Color(150, 90, 60));
         refreshBtn.addActionListener(e -> refresh());
 
-        JButton exportBtn = createStyledButton("Export to CSV", new Color(110, 70, 50));
+        exportBtn = createStyledButton("Export to CSV", new Color(110, 70, 50));
         exportBtn.addActionListener(e -> exportToCSV());
 
         controlPanel.add(refreshBtn);
@@ -135,19 +150,39 @@ public class TransactionHistoryPanel extends JPanel {
 
     public void refresh() {
         tableModel.setRowCount(0);
-        List<Transaction> transactions = billDAO.getTransactionHistory();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        try {
+            List<Transaction> transactions = billDAO.getTransactionHistory();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
-        for (Transaction t : transactions) {
-            tableModel.addRow(new Object[]{
-                t.getId(),
-                t.getBillNumber(),
-                t.getCustomerName(),
-                t.getPaymentMethod(),
-                String.format("₹%.2f", t.getAmount()),
-                t.getStatus(),
-                dateFormat.format(t.getTransactionDate())
-            });
+            if (transactions != null && !transactions.isEmpty()) {
+                for (Transaction t : transactions) {
+                    tableModel.addRow(new Object[]{
+                        t.getId(),
+                        t.getBillNumber(),
+                        t.getCustomerName(),
+                        t.getPaymentMethod(),
+                        t.getAmount(),
+                        t.getStatus(),
+                        dateFormat.format(t.getTransactionDate())
+                    });
+                }
+                
+                JOptionPane.showMessageDialog(this, 
+                    "Loaded " + transactions.size() + " transactions successfully!", 
+                    "Refresh Complete", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "No transactions found in the database.", 
+                    "Information", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error loading transaction history: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -161,7 +196,7 @@ public class TransactionHistoryPanel extends JPanel {
             try (PrintWriter writer = new PrintWriter(file)) {
                 // Write header
                 writer.println("Transaction ID,Bill Number,Customer,Payment Method,Amount,Status,Date Time");
-
+                
                 // Write data
                 for (int i = 0; i < tableModel.getRowCount(); i++) {
                     StringBuilder sb = new StringBuilder();

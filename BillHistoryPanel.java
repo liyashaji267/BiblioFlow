@@ -7,6 +7,7 @@ import javax.swing.SortOrder;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.*;
 
 public class BillHistoryPanel extends JPanel {
 
@@ -17,10 +18,12 @@ public class BillHistoryPanel extends JPanel {
     private BillDAO billDAO = new BillDAO();
     private List<Bill> bills;
     private JButton refreshBtn;
+    private JButton exportBtn;
 
     public BillHistoryPanel() {
         setLayout(new BorderLayout(15, 15));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setBackground(new Color(250, 240, 230));
         
         // Main background with gradient
         JPanel mainPanel = new JPanel(new BorderLayout()) {
@@ -49,15 +52,20 @@ public class BillHistoryPanel extends JPanel {
         initMainTable();
         initItemsTable();
 
-        // Refresh button
+        // Control buttons panel
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        controlPanel.setOpaque(false);
+        
         refreshBtn = createStyledButton("Refresh Bills", new Color(150, 90, 60));
         refreshBtn.addActionListener(e -> refresh());
         
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setOpaque(false);
-        buttonPanel.add(refreshBtn);
+        exportBtn = createStyledButton("Export to CSV", new Color(110, 70, 50));
+        exportBtn.addActionListener(e -> exportToCSV());
+        
+        controlPanel.add(refreshBtn);
+        controlPanel.add(exportBtn);
 
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        mainPanel.add(controlPanel, BorderLayout.SOUTH);
         add(mainPanel);
 
         refresh();
@@ -90,11 +98,18 @@ public class BillHistoryPanel extends JPanel {
     }
 
     private void initMainTable() {
-        String[] columns = {"Bill No", "Customer", "Amount", "Date", "Status"};
+        String[] columns = {"Bill ID", "Bill Number", "Customer", "Amount", "Date", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // All cells read-only
+            }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) return Integer.class; // Bill ID
+                if (columnIndex == 3) return Double.class;  // Amount
+                return String.class;
             }
         };
 
@@ -139,17 +154,57 @@ public class BillHistoryPanel extends JPanel {
         table.setShowGrid(true);
         table.setIntercellSpacing(new Dimension(1, 1));
 
-        // Simple alignment using fully qualified names
-        javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        javax.swing.table.DefaultTableCellRenderer leftRenderer = new javax.swing.table.DefaultTableCellRenderer();
-        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
+        // Custom renderer for status column
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                
+                // Color code status column
+                if (column == 5) { // Status column
+                    String status = value.toString();
+                    if ("PAID".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
+                        c.setBackground(new Color(200, 255, 200));
+                        c.setForeground(Color.BLACK);
+                    } else if ("PENDING".equalsIgnoreCase(status)) {
+                        c.setBackground(new Color(255, 255, 200));
+                        c.setForeground(Color.BLACK);
+                    } else if ("FAILED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
+                        c.setBackground(new Color(255, 200, 200));
+                        c.setForeground(Color.BLACK);
+                    } else {
+                        c.setBackground(new Color(255, 250, 245));
+                        c.setForeground(new Color(80, 50, 40));
+                    }
+                } else {
+                    c.setBackground(new Color(255, 250, 245));
+                    c.setForeground(new Color(80, 50, 40));
+                }
 
-        table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer); // Bill No
-        table.getColumnModel().getColumn(1).setCellRenderer(leftRenderer);   // Customer
-        table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer); // Amount
-        table.getColumnModel().getColumn(3).setCellRenderer(centerRenderer); // Date
-        table.getColumnModel().getColumn(4).setCellRenderer(centerRenderer); // Status
+                if (isSelected) {
+                    c.setBackground(new Color(150, 90, 60));
+                    c.setForeground(Color.WHITE);
+                }
+
+                return c;
+            }
+        });
+
+        // Simple alignment using fully qualified names
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
+        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
+        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
+        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer); // Bill ID
+        table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer); // Bill Number
+        table.getColumnModel().getColumn(2).setCellRenderer(leftRenderer);   // Customer
+        table.getColumnModel().getColumn(3).setCellRenderer(rightRenderer);  // Amount
+        table.getColumnModel().getColumn(4).setCellRenderer(centerRenderer); // Date
+        table.getColumnModel().getColumn(5).setCellRenderer(centerRenderer); // Status
 
         // Header styling
         JTableHeader header = table.getTableHeader();
@@ -161,11 +216,18 @@ public class BillHistoryPanel extends JPanel {
     }
 
     private void initItemsTable() {
-        String[] itemColumns = {"Book Name", "Quantity", "Price"};
+        String[] itemColumns = {"Book Name", "Quantity", "Price", "Total"};
         itemsTableModel = new DefaultTableModel(itemColumns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
+            }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 1) return Integer.class; // Quantity
+                if (columnIndex == 2 || columnIndex == 3) return Double.class; // Price, Total
+                return String.class;
             }
         };
 
@@ -181,14 +243,17 @@ public class BillHistoryPanel extends JPanel {
         table.setForeground(new Color(80, 50, 40));
         
         // Simple alignment using fully qualified names
-        javax.swing.table.DefaultTableCellRenderer leftRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
         leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
-        javax.swing.table.DefaultTableCellRenderer rightRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
         rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
 
         table.getColumnModel().getColumn(0).setCellRenderer(leftRenderer);  // Book Name
-        table.getColumnModel().getColumn(1).setCellRenderer(rightRenderer); // Quantity
+        table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer); // Quantity
         table.getColumnModel().getColumn(2).setCellRenderer(rightRenderer); // Price
+        table.getColumnModel().getColumn(3).setCellRenderer(rightRenderer); // Total
 
         JTableHeader header = table.getTableHeader();
         header.setFont(new Font("Georgia", Font.BOLD, 13));
@@ -204,12 +269,13 @@ public class BillHistoryPanel extends JPanel {
 
             double totalAmount = 0;
             for (BillItem item : items) {
-                double itemTotal = item.getPrice() * item.getQuantity();
+                double itemTotal = item.getUnitPrice() * item.getQuantity();
                 totalAmount += itemTotal;
                 itemsTableModel.addRow(new Object[]{
                     item.getBookName(), 
                     item.getQuantity(),
-                    String.format("₹%.2f", item.getPrice())
+                    item.getUnitPrice(),
+                    itemTotal
                 });
             }
 
@@ -219,11 +285,10 @@ public class BillHistoryPanel extends JPanel {
             detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
             // Bill summary
-            Bill bill = billDAO.getBillByNumber(bills.stream()
+            Bill bill = bills.stream()
                 .filter(b -> b.getId() == billId)
                 .findFirst()
-                .map(Bill::getBillNumber)
-                .orElse(""));
+                .orElse(null);
 
             if (bill != null) {
                 JPanel summaryPanel = new JPanel(new GridLayout(0, 2, 10, 5));
@@ -267,7 +332,7 @@ public class BillHistoryPanel extends JPanel {
 
             JOptionPane.showMessageDialog(this,
                     detailsPanel,
-                    "Bill Details - " + bill.getBillNumber(),
+                    "Bill Details - " + (bill != null ? bill.getBillNumber() : "Unknown"),
                     JOptionPane.INFORMATION_MESSAGE);
 
         } catch (Exception e) {
@@ -297,32 +362,40 @@ public class BillHistoryPanel extends JPanel {
         tableModel.setRowCount(0);
         try {
             bills = billDAO.getAllBills();
-            for (Bill b : bills) {
-                tableModel.addRow(new Object[]{
-                        b.getBillNumber(),
-                        b.getCustomerName(),
-                        String.format("₹%.2f", b.getFinalAmount()),
-                        b.getDate(),
-                        b.getPaymentStatus()
-                });
-            }
+            if (bills != null) {
+                for (Bill b : bills) {
+                    tableModel.addRow(new Object[]{
+                            b.getId(),
+                            b.getBillNumber(),
+                            b.getCustomerName(),
+                            b.getFinalAmount(),
+                            b.getDate(),
+                            b.getPaymentStatus()
+                    });
+                }
 
-            if (!bills.isEmpty()) {
-                TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
-                table.setRowSorter(sorter);
-                List<SortKey> sortKeys = new ArrayList<>();
-                sortKeys.add(new SortKey(3, SortOrder.DESCENDING)); // Sort by Date column
-                sorter.setSortKeys(sortKeys);
-                
-                JOptionPane.showMessageDialog(this, 
-                    "Loaded " + bills.size() + " bills successfully!", 
-                    "Refresh Complete", 
-                    JOptionPane.INFORMATION_MESSAGE);
+                if (!bills.isEmpty()) {
+                    TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
+                    table.setRowSorter(sorter);
+                    List<SortKey> sortKeys = new ArrayList<>();
+                    sortKeys.add(new SortKey(0, SortOrder.DESCENDING)); // Sort by Bill ID
+                    sorter.setSortKeys(sortKeys);
+                    
+                    JOptionPane.showMessageDialog(this, 
+                        "Loaded " + bills.size() + " bills successfully!", 
+                        "Refresh Complete", 
+                        JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, 
+                        "No bills found in the database.", 
+                        "Information", 
+                        JOptionPane.INFORMATION_MESSAGE);
+                }
             } else {
                 JOptionPane.showMessageDialog(this, 
-                    "No bills found in the database.", 
-                    "Information", 
-                    JOptionPane.INFORMATION_MESSAGE);
+                    "Failed to load bills from database.", 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
             }
 
         } catch (Exception e) {
@@ -331,6 +404,45 @@ public class BillHistoryPanel extends JPanel {
                     "Error loading bill history: " + e.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void exportToCSV() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Export Bill History");
+        fileChooser.setSelectedFile(new java.io.File("bill_history.csv"));
+
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            java.io.File file = fileChooser.getSelectedFile();
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(file)) {
+                // Write header
+                writer.println("Bill ID,Bill Number,Customer,Amount,Date,Status");
+                
+                // Write data
+                for (int i = 0; i < tableModel.getRowCount(); i++) {
+                    StringBuilder sb = new StringBuilder();
+                    for (int j = 0; j < tableModel.getColumnCount(); j++) {
+                        if (j > 0) sb.append(",");
+                        String value = tableModel.getValueAt(i, j).toString();
+                        if (value.contains(",") || value.contains("\"")) {
+                            value = "\"" + value.replace("\"", "\"\"") + "\"";
+                        }
+                        sb.append(value);
+                    }
+                    writer.println(sb.toString());
+                }
+
+                JOptionPane.showMessageDialog(this, 
+                    "Bill history exported successfully to: " + file.getAbsolutePath(),
+                    "Export Successful", 
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (java.io.FileNotFoundException e) {
+                JOptionPane.showMessageDialog(this, 
+                    "Error exporting file: " + e.getMessage(),
+                    "Export Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 }

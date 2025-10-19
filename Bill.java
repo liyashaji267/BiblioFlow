@@ -9,6 +9,7 @@ public class Bill {
     private String paymentStatus;
     private String orderStatus;
     private String date;
+    private String paymentMethod; // Add this field
 
     // Getters and setters
     public int getId() { return id; }
@@ -40,4 +41,8 @@ public class Bill {
 
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
+
+    // Add getter and setter for paymentMethod
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 }
