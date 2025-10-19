@@ -26,40 +26,50 @@ public class SearchPanel extends JPanel {
 
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        setBackground(new Color(245, 245, 245));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setBackground(new Color(250, 240, 230)); // Frontpage light cream
 
         // ---------- HEADER ----------
         JLabel headerLabel = new JLabel("Search Books", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 28));
-        headerLabel.setForeground(new Color(70, 130, 180));
+        headerLabel.setFont(new Font("Georgia", Font.BOLD, 32));
+        headerLabel.setForeground(new Color(80, 50, 40)); // Frontpage dark brown
+        headerLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
         add(headerLabel, BorderLayout.NORTH);
 
         // ---------- SEARCH PANEL ----------
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        searchPanel.setBackground(new Color(245, 245, 245));
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
+        searchPanel.setBackground(new Color(250, 240, 230));
+        searchPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(150, 90, 60), 2), // Frontpage brown
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        JLabel searchLabel = new JLabel("Search:");
+        searchLabel.setFont(new Font("Georgia", Font.BOLD, 16));
+        searchLabel.setForeground(new Color(80, 50, 40));
 
         searchField = new JTextField(25);
-        searchField.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchField.setFont(new Font("Georgia", Font.PLAIN, 14));
+        searchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(150, 90, 60)),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+
+        JLabel typeLabel = new JLabel("By:");
+        typeLabel.setFont(new Font("Georgia", Font.BOLD, 16));
+        typeLabel.setForeground(new Color(80, 50, 40));
 
         searchType = new JComboBox<>(new String[]{"Title", "Author", "ISBN", "Publisher", "All Fields"});
-        searchType.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchType.setFont(new Font("Georgia", Font.PLAIN, 14));
+        searchType.setBackground(Color.WHITE);
+        searchType.setBorder(BorderFactory.createLineBorder(new Color(150, 90, 60)));
 
-        JButton searchBtn = new JButton("Search");
-        searchBtn.setBackground(new Color(70, 130, 180));
-        searchBtn.setForeground(Color.WHITE);
-        searchBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        searchBtn.setFocusPainted(false);
+        JButton searchBtn = createStyledButton("Search", new Color(150, 90, 60)); // Frontpage brown
+        JButton clearBtn = createStyledButton("Clear", new Color(130, 80, 50)); // Darker brown
 
-        JButton clearBtn = new JButton("Clear");
-        clearBtn.setBackground(new Color(244, 67, 54));
-        clearBtn.setForeground(Color.WHITE);
-        clearBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        clearBtn.setFocusPainted(false);
-
-        searchPanel.add(new JLabel("Search:"));
+        searchPanel.add(searchLabel);
         searchPanel.add(searchField);
-        searchPanel.add(new JLabel("By:"));
+        searchPanel.add(typeLabel);
         searchPanel.add(searchType);
         searchPanel.add(searchBtn);
         searchPanel.add(clearBtn);
@@ -67,26 +77,64 @@ public class SearchPanel extends JPanel {
         add(searchPanel, BorderLayout.CENTER);
 
         // ---------- RESULTS PANEL ----------
-        resultsPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 15, 15));
-        resultsPanel.setBackground(Color.WHITE);
+        resultsPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 20, 20));
+        resultsPanel.setBackground(new Color(250, 240, 230));
+        
         resultsScroll = new JScrollPane(resultsPanel);
         resultsScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         resultsScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         resultsScroll.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
+            BorderFactory.createLineBorder(new Color(150, 90, 60), 2),
             "Search Results",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Arial", Font.BOLD, 16),
-            new Color(70, 130, 180)
+            new Font("Georgia", Font.BOLD, 18),
+            new Color(80, 50, 40) // Dark brown
         ));
+        resultsScroll.getViewport().setBackground(new Color(250, 240, 230));
+        
+        // Style the scrollbar
+        JScrollBar verticalScrollBar = resultsScroll.getVerticalScrollBar();
+        verticalScrollBar.setBackground(new Color(230, 200, 180));
+        verticalScrollBar.setBorder(BorderFactory.createLineBorder(new Color(150, 90, 60)));
 
-        add(resultsScroll, BorderLayout.SOUTH);
+        JPanel resultsContainer = new JPanel(new BorderLayout());
+        resultsContainer.setBackground(new Color(250, 240, 230));
+        resultsContainer.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+        resultsContainer.add(resultsScroll, BorderLayout.CENTER);
+        
+        add(resultsContainer, BorderLayout.SOUTH);
 
         // ---------- ACTIONS ----------
         searchBtn.addActionListener(e -> performSearch());
         clearBtn.addActionListener(e -> clearSearch());
         searchField.addActionListener(e -> performSearch());
+    }
+
+    private JButton createStyledButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFont(new Font("Georgia", Font.BOLD, 14));
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(color.darker()),
+            BorderFactory.createEmptyBorder(8, 20, 8, 20)
+        ));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        // Hover effect like frontpage
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+        
+        return button;
     }
 
     private void performSearch() {
@@ -142,7 +190,9 @@ public class SearchPanel extends JPanel {
     private void displayResults(List<Book> books) {
         if (books.isEmpty()) {
             JLabel empty = new JLabel("No books found matching your search criteria.", SwingConstants.CENTER);
-            empty.setFont(new Font("Arial", Font.ITALIC, 16));
+            empty.setFont(new Font("Georgia", Font.ITALIC, 16));
+            empty.setForeground(new Color(80, 50, 40));
+            empty.setBorder(BorderFactory.createEmptyBorder(40, 20, 40, 20));
             resultsPanel.add(empty);
         } else {
             for (Book b : books) {
@@ -157,22 +207,41 @@ public class SearchPanel extends JPanel {
     private JPanel createBookCard(Book book) {
         JPanel card = new JPanel(new BorderLayout(10, 10));
         card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(180, 180, 180)),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createLineBorder(new Color(150, 90, 60), 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
-        card.setBackground(Color.WHITE);
-        card.setPreferredSize(new Dimension(280, 160));
+        card.setBackground(new Color(255, 250, 245)); // Slightly lighter cream
+        card.setPreferredSize(new Dimension(300, 180));
 
-        JLabel titleLabel = new JLabel("<html><b>" + book.getTitle() + "</b></html>");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        // Title
+        JLabel titleLabel = new JLabel("<html><div style='width:250px;'>" + book.getTitle() + "</div></html>");
+        titleLabel.setFont(new Font("Georgia", Font.BOLD, 14));
+        titleLabel.setForeground(new Color(80, 50, 40));
 
+        // Book info
         JLabel authorLabel = new JLabel("Author: " + book.getAuthor());
-        JLabel isbnLabel = new JLabel("ISBN: " + book.getIsbn());
-        JLabel publisherLabel = new JLabel("Publisher: " + book.getPublisher());
-        JLabel stockLabel = new JLabel("In Stock: " + book.getStockQuantity());
-        JLabel priceLabel = new JLabel("Price: ₹" + book.getPrice());
+        authorLabel.setFont(new Font("Georgia", Font.PLAIN, 12));
+        authorLabel.setForeground(new Color(80, 50, 40));
 
-        JPanel infoPanel = new JPanel(new GridLayout(6, 1, 5, 5));
+        JLabel isbnLabel = new JLabel("ISBN: " + book.getIsbn());
+        isbnLabel.setFont(new Font("Georgia", Font.PLAIN, 12));
+        isbnLabel.setForeground(new Color(80, 50, 40));
+
+        JLabel publisherLabel = new JLabel("Publisher: " + book.getPublisher());
+        publisherLabel.setFont(new Font("Georgia", Font.PLAIN, 12));
+        publisherLabel.setForeground(new Color(80, 50, 40));
+
+        JLabel stockLabel = new JLabel("In Stock: " + book.getStockQuantity());
+        stockLabel.setFont(new Font("Georgia", Font.PLAIN, 12));
+        stockLabel.setForeground(new Color(80, 50, 40));
+
+        JLabel priceLabel = new JLabel("Price: ₹" + book.getPrice());
+        priceLabel.setFont(new Font("Georgia", Font.BOLD, 13));
+        priceLabel.setForeground(new Color(150, 90, 60));
+
+        // Info panel
+        JPanel infoPanel = new JPanel(new GridLayout(6, 1, 3, 3));
+        infoPanel.setBackground(new Color(255, 250, 245));
         infoPanel.add(titleLabel);
         infoPanel.add(authorLabel);
         infoPanel.add(isbnLabel);
@@ -180,12 +249,10 @@ public class SearchPanel extends JPanel {
         infoPanel.add(stockLabel);
         infoPanel.add(priceLabel);
 
-        JButton viewBtn = new JButton("View Details");
-        viewBtn.setBackground(new Color(70, 130, 180));
-        viewBtn.setForeground(Color.WHITE);
-        viewBtn.setFont(new Font("Arial", Font.BOLD, 13));
-        viewBtn.setFocusPainted(false);
-        viewBtn.addActionListener(e -> showBookDetails(book));
+        // View details button
+        JButton viewBtn = createStyledButton("View Details", new Color(150, 90, 60));
+        viewBtn.setFont(new Font("Georgia", Font.BOLD, 12));
+        viewBtn.setPreferredSize(new Dimension(120, 30));
 
         card.add(infoPanel, BorderLayout.CENTER);
         card.add(viewBtn, BorderLayout.SOUTH);
@@ -194,23 +261,53 @@ public class SearchPanel extends JPanel {
     }
 
     private void showBookDetails(Book book) {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Create a custom dialog panel with frontpage styling
+        JPanel panel = new JPanel(new BorderLayout(15, 15));
+        panel.setBackground(new Color(250, 240, 230));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
+        // Title
         JLabel titleLabel = new JLabel(book.getTitle());
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setFont(new Font("Georgia", Font.BOLD, 20));
+        titleLabel.setForeground(new Color(80, 50, 40));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
 
-        JPanel infoPanel = new JPanel(new GridLayout(0, 1, 5, 5));
-        infoPanel.add(new JLabel("Author: " + book.getAuthor()));
-        infoPanel.add(new JLabel("ISBN: " + book.getIsbn()));
-        infoPanel.add(new JLabel("Publisher: " + book.getPublisher()));
-        infoPanel.add(new JLabel("Stock Quantity: " + book.getStockQuantity()));
-        infoPanel.add(new JLabel("Price: ₹" + book.getPrice()));
+        // Book details
+        JPanel detailsPanel = new JPanel(new GridLayout(0, 1, 8, 8));
+        detailsPanel.setBackground(new Color(250, 240, 230));
+        
+        addDetailRow(detailsPanel, "Author:", book.getAuthor());
+        addDetailRow(detailsPanel, "ISBN:", book.getIsbn());
+        addDetailRow(detailsPanel, "Publisher:", book.getPublisher());
+        addDetailRow(detailsPanel, "Edition:", book.getEdition());
+        addDetailRow(detailsPanel, "Genre:", book.getGenre());
+        addDetailRow(detailsPanel, "Stock Quantity:", String.valueOf(book.getStockQuantity()));
+        addDetailRow(detailsPanel, "Price:", "₹" + book.getPrice());
+        addDetailRow(detailsPanel, "Rack Number:", book.getRackNumber());
 
         panel.add(titleLabel, BorderLayout.NORTH);
-        panel.add(infoPanel, BorderLayout.CENTER);
+        panel.add(detailsPanel, BorderLayout.CENTER);
 
-        JOptionPane.showMessageDialog(this, panel, "Book Details", JOptionPane.INFORMATION_MESSAGE);
+        // Show in styled option pane
+        JOptionPane.showMessageDialog(this, panel, "Book Details", 
+            JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void addDetailRow(JPanel panel, String label, String value) {
+        JPanel rowPanel = new JPanel(new BorderLayout());
+        rowPanel.setBackground(new Color(250, 240, 230));
+        
+        JLabel labelLabel = new JLabel(label);
+        labelLabel.setFont(new Font("Georgia", Font.BOLD, 13));
+        labelLabel.setForeground(new Color(80, 50, 40));
+        
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Georgia", Font.PLAIN, 13));
+        valueLabel.setForeground(new Color(80, 50, 40));
+        
+        rowPanel.add(labelLabel, BorderLayout.WEST);
+        rowPanel.add(valueLabel, BorderLayout.CENTER);
+        panel.add(rowPanel);
     }
 
     private void clearSearch() {

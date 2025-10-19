@@ -12,6 +12,7 @@ public class Book {
     private String imagePath;
     private String genre;
 
+
     // Quantity the customer wants to buy
     private int cartQuantity;
 

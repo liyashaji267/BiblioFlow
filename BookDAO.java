@@ -1,16 +1,29 @@
-// BookDAO.java
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class BookDAO {
+
+    private Connection connection;
+
+    public BookDAO(Connection connection) {
+        this.connection = connection;
+    }
+
+    public BookDAO() {
+        try {
+            this.connection = DBUtil.getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            this.connection = null; // fallback if connection fails
+        }
+    }
+
+    
     public boolean addBook(Book book) {
         String sql = "INSERT INTO books (isbn, title, author, publisher, edition, price, stock_quantity, rack_number, location, image_path, genre) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, book.getIsbn());
             stmt.setString(2, book.getTitle());
             stmt.setString(3, book.getAuthor());
@@ -22,13 +35,13 @@ public class BookDAO {
             stmt.setString(9, book.getLocation());
             stmt.setString(10, book.getImagePath());
             stmt.setString(11, book.getGenre());
-            
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
+
     
     public Book findBookByISBN(String isbn) {
         String sql = "SELECT * FROM books WHERE isbn = ?";
@@ -228,5 +241,6 @@ public double getBookCostPrice(String bookName) {
     }
     return cost;
 }
+
 
 }

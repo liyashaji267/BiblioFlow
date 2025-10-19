@@ -50,7 +50,9 @@ javac -cp "lib/*" -d out ^
     CustomerLoyaltyPanel.java ^
     CustomerLoyaltyService.java ^
     LoyaltyProgramUI.java ^
-    LoyaltyAndDiscountUI.java
+    LoyaltyAndDiscountUI.java ^
+    TransactionDAO.java ^
+    TransactionSummary.java
 
 
 if errorlevel 1 (

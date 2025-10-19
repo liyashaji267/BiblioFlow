@@ -5,12 +5,15 @@ import javax.swing.table.JTableHeader;
 
 import org.apache.poi.sl.usermodel.PaintStyle.GradientPaint;
 
+import com.itextpdf.text.Image;
+
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -273,25 +276,51 @@ public class MainApplication extends JFrame {
     }
     
     private JPanel createInventoryPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        
-        // Create tabbed pane for Inventory View and Search
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setOpaque(false);
-        
-        // Inventory View Tab
-        JPanel inventoryViewPanel = createInventoryViewPanel();
-        tabbedPane.addTab("Inventory View", inventoryViewPanel);
-        
-        // Search Tab
-        SearchPanel searchPanel = new SearchPanel(bookDAO);
-        tabbedPane.addTab("Search Books", searchPanel);
-        
-        panel.add(tabbedPane, BorderLayout.CENTER);
-        
-        return panel;
+    JPanel panel = new JPanel(new BorderLayout());
+    panel.setOpaque(false);
+
+    // DB connection
+    Connection connection = null;
+    try {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        connection = DriverManager.getConnection(
+            "jdbc:mysql://localhost:3306/your_db_name", "username", "password");
+    } catch (Exception e) {
+        e.printStackTrace();
     }
+
+    BookDAO bookDAO = new BookDAO(connection);
+
+    // Tabbed Pane
+    JTabbedPane tabbedPane = new JTabbedPane();
+    tabbedPane.setOpaque(false);
+
+    // Inventory View Tab
+    JPanel inventoryViewPanel = new JPanel(new BorderLayout()); // create panel for inventory view
+    tabbedPane.addTab("Inventory View", inventoryViewPanel);
+
+    // Books Panel inside Inventory View
+    JPanel booksPanel = new JPanel();
+    booksPanel.setLayout(new BoxLayout(booksPanel, BoxLayout.Y_AXIS));
+    JScrollPane scrollPane = new JScrollPane(booksPanel);
+    inventoryViewPanel.add(scrollPane, BorderLayout.CENTER);
+    // Fetch books and add cards
+    List<Book> booksList = bookDAO.getAllBooks();
+    for (Book book : booksList) {
+        JPanel bookCard = createBookCard(book);
+        booksPanel.add(bookCard);
+    }
+    booksPanel.revalidate();
+    booksPanel.repaint();
+
+    // Search Tab
+    SearchPanel searchPanel = new SearchPanel(bookDAO);
+    tabbedPane.addTab("Search Books", searchPanel);
+
+    panel.add(tabbedPane, BorderLayout.CENTER);
+    return panel;
+    }
+
 
     private JPanel createInventoryViewPanel() {
         JPanel panel = new JPanel(new BorderLayout());
@@ -504,58 +533,96 @@ public class MainApplication extends JFrame {
     }
 
     private JPanel createBookCard(Book book) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(150, 90, 60), 1),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        card.setPreferredSize(new Dimension(280, 150));
-        card.setBackground(new Color(255, 250, 245));
-        
-        // Book info
-        JLabel titleLabel = new JLabel("<html><b>" + book.getTitle() + "</b></html>");
-        titleLabel.setFont(new Font("Georgia", Font.BOLD, 14));
-        titleLabel.setForeground(new Color(80, 50, 40));
-        
-        JLabel author = new JLabel("By: " + book.getAuthor());
-        author.setForeground(new Color(80, 50, 40));
-        JLabel price = new JLabel("₹" + book.getPrice());
-        price.setForeground(new Color(80, 50, 40));
-        JLabel stock = new JLabel("Stock: " + book.getStockQuantity());
-        stock.setForeground(new Color(80, 50, 40));
-        JLabel isbn = new JLabel("ISBN: " + book.getIsbn());
-        isbn.setForeground(new Color(80, 50, 40));
-        
-        JPanel infoPanel = new JPanel(new GridLayout(5, 1, 5, 5));
-        infoPanel.setBackground(new Color(255, 250, 245));
-        infoPanel.add(titleLabel);
-        infoPanel.add(author);
-        infoPanel.add(price);
-        infoPanel.add(stock);
-        infoPanel.add(isbn);
-        
-        // Action buttons
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 5, 0));
-        buttonPanel.setBackground(new Color(255, 250, 245));
-        
-        JButton editBtn = new JButton("Edit");
-        editBtn.setBackground(new Color(150, 90, 60)); // Main brown
-        editBtn.setForeground(Color.WHITE);
-        editBtn.addActionListener(e -> showEditBookDialog(book));
-        
-        JButton deleteBtn = new JButton("Delete");
-        deleteBtn.setBackground(new Color(130, 70, 40)); // Darker brown
-        deleteBtn.setForeground(Color.WHITE);
-        deleteBtn.addActionListener(e -> deleteBook(book));
-        
-        buttonPanel.add(editBtn);
-        buttonPanel.add(deleteBtn);
-        
-        card.add(infoPanel, BorderLayout.CENTER);
-        card.add(buttonPanel, BorderLayout.SOUTH);
-        
-        return card;
+    JPanel card = new JPanel(new BorderLayout());
+    card.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createLineBorder(new Color(150, 90, 60), 1),
+        BorderFactory.createEmptyBorder(10, 10, 10, 10)
+    ));
+    card.setPreferredSize(new Dimension(318, 188));
+    card.setBackground(new Color(255, 250, 245));
+
+    // =============================
+    // Book Info Section
+    // =============================
+    JLabel titleLabel = new JLabel("<html><b>" + book.getTitle() + "</b></html>");
+    titleLabel.setFont(new Font("Georgia", Font.BOLD, 14));
+    titleLabel.setForeground(new Color(80, 50, 40));
+
+    JLabel author = new JLabel("By: " + book.getAuthor());
+    author.setForeground(new Color(80, 50, 40));
+
+    JLabel price = new JLabel("₹" + book.getPrice());
+    price.setForeground(new Color(80, 50, 40));
+
+    JLabel stock = new JLabel("Stock: " + book.getStockQuantity());
+    stock.setForeground(new Color(80, 50, 40));
+
+    JLabel isbn = new JLabel("ISBN: " + book.getIsbn());
+    isbn.setForeground(new Color(80, 50, 40));
+
+    JPanel infoPanel = new JPanel(new GridLayout(5, 1, 5, 5));
+    infoPanel.setBackground(new Color(255, 250, 245));
+    infoPanel.add(titleLabel);
+    infoPanel.add(author);
+    infoPanel.add(price);
+    infoPanel.add(stock);
+    infoPanel.add(isbn);
+
+    // =============================
+    // Cover Image Section
+    // =============================
+    JLabel coverLabel;
+    try {
+        String path = book.getImagePath();
+        if (path != null && !path.trim().isEmpty()) {
+            ImageIcon icon = new ImageIcon(path);
+            java.awt.Image scaled = icon.getImage().getScaledInstance(80, 120, java.awt.Image.SCALE_SMOOTH);
+            coverLabel = new JLabel(new ImageIcon(scaled));
+        } else {
+            throw new Exception("No path");
+        }
+    } catch (Exception e) {
+        coverLabel = new JLabel("No Image");
+        coverLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        coverLabel.setPreferredSize(new Dimension(80, 120));
     }
+
+    // =============================
+    // Combine image + info
+    // =============================
+    JPanel centerPanel = new JPanel(new BorderLayout());
+    centerPanel.setBackground(new Color(255, 250, 245));
+    centerPanel.add(coverLabel, BorderLayout.WEST);
+    centerPanel.add(infoPanel, BorderLayout.CENTER);
+
+    // =============================
+    // Action Buttons
+    // =============================
+    JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 5, 0));
+    buttonPanel.setBackground(new Color(255, 250, 245));
+
+    JButton editBtn = new JButton("Edit");
+    editBtn.setBackground(new Color(150, 90, 60));
+    editBtn.setForeground(Color.WHITE);
+    editBtn.addActionListener(e -> showEditBookDialog(book));
+
+    JButton deleteBtn = new JButton("Delete");
+    deleteBtn.setBackground(new Color(130, 70, 40));
+    deleteBtn.setForeground(Color.WHITE);
+    deleteBtn.addActionListener(e -> deleteBook(book));
+
+    buttonPanel.add(editBtn);
+    buttonPanel.add(deleteBtn);
+
+    // =============================
+    // Assemble Card
+    // =============================
+    card.add(centerPanel, BorderLayout.CENTER);
+    card.add(buttonPanel, BorderLayout.SOUTH);
+
+    return card;
+    }
+
 
     // Helper method to find tabbed pane in the panel hierarchy
     private JTabbedPane findTabbedPane(Container container) {
