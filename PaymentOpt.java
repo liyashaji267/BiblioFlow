@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
+import java.io.IOException;
 
 public class PaymentOpt extends JFrame {
     private double totalAmount;
@@ -18,7 +20,7 @@ public class PaymentOpt extends JFrame {
         this.customerPhone = customerPhone;
 
         setTitle("Payment Options - BiblioFlow");
-        setSize(500, 600);
+        setSize(500, 700); // Increased height for PayPal button
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
@@ -53,18 +55,20 @@ public class PaymentOpt extends JFrame {
         panel.add(amountLabel, BorderLayout.NORTH);
 
         // Payment options
-        JPanel options = new JPanel(new GridLayout(4, 1, 15, 15));
+        JPanel options = new JPanel(new GridLayout(5, 1, 15, 15)); // Changed to 5 rows for PayPal
         options.setOpaque(false);
 
         JButton upiBtn = createStyledButton("Pay via UPI", new Color(150, 90, 60));
         JButton netBtn = createStyledButton("Pay via Net Banking", new Color(120, 70, 50));
         JButton cashBtn = createStyledButton("Pay via Cash", new Color(160, 110, 80));
         JButton cardBtn = createStyledButton("Pay via Card", new Color(110, 70, 50));
+        JButton paypalBtn = createStyledButton("Pay with PayPal", new Color(0, 48, 135)); // PayPal blue
 
         options.add(upiBtn);
         options.add(netBtn);
         options.add(cashBtn);
         options.add(cardBtn);
+        options.add(paypalBtn);
 
         panel.add(options, BorderLayout.CENTER);
 
@@ -85,6 +89,7 @@ public class PaymentOpt extends JFrame {
         netBtn.addActionListener(e -> handleNetBankingPayment(printBtn));
         cashBtn.addActionListener(e -> handleCashPayment(printBtn));
         cardBtn.addActionListener(e -> handleCardPayment(printBtn));
+        paypalBtn.addActionListener(e -> handlePayPalPayment(printBtn));
         printBtn.addActionListener(e -> {
             printBill();
             this.dispose();
@@ -116,7 +121,7 @@ public class PaymentOpt extends JFrame {
     }
 
     // -------------------------
-    // PAYMENT HANDLERS (all dialogs restyled)
+    // PAYMENT HANDLERS
     // -------------------------
 
     private void handleUPIPayment(JButton printBtn) {
@@ -249,6 +254,132 @@ public class PaymentOpt extends JFrame {
         cardDialog.add(panel, BorderLayout.CENTER);
         cardDialog.add(confirmBtn, BorderLayout.SOUTH);
         cardDialog.setVisible(true);
+    }
+
+    private void handlePayPalPayment(JButton printBtn) {
+        if (!PayPalClient.isConfigured()) {
+            JOptionPane.showMessageDialog(this,
+                    "PayPal is not configured properly.\nPlease check your .env file with CLIENT_ID and CLIENT_SECRET.",
+                    "PayPal Configuration Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Start local server for callbacks
+        try {
+            LocalServer.startServer();
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to start local server for PayPal callbacks.",
+                    "Server Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Show PayPal processing dialog
+        JDialog paypalDialog = new JDialog(this, "PayPal Payment", true);
+        paypalDialog.setSize(450, 400);
+        paypalDialog.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel(new BorderLayout(10, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                GradientPaint gp = new GradientPaint(
+                        0, 0, new Color(250, 240, 230),
+                        0, getHeight(), new Color(230, 200, 180)
+                );
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // PayPal logo
+        JLabel paypalLogo = new JLabel("PayPal", SwingConstants.CENTER);
+        paypalLogo.setFont(new Font("Arial", Font.BOLD, 28));
+        paypalLogo.setForeground(new Color(0, 48, 135));
+
+        // Instructions
+        JTextArea instructions = new JTextArea(
+                "PayPal Payment Process:\n\n" +
+                "1. Click 'Open PayPal' to proceed to PayPal\n" +
+                "2. Log in to your PayPal account\n" +
+                "3. Review and confirm your payment\n" +
+                "4. You will be redirected back to this application\n" +
+                "5. Click 'Payment Complete' after successful payment\n\n" +
+                "Amount: $" + String.format("%.2f", totalAmount / 75.0) + " (₹" + String.format("%.2f", totalAmount) + ")"
+        );
+        instructions.setFont(new Font("Arial", Font.PLAIN, 14));
+        instructions.setEditable(false);
+        instructions.setBackground(new Color(250, 240, 230));
+        instructions.setForeground(new Color(80, 50, 40));
+        instructions.setLineWrap(true);
+        instructions.setWrapStyleWord(true);
+
+        // Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.setOpaque(false);
+
+        JButton openPayPalBtn = createStyledButton("Open PayPal", new Color(0, 48, 135));
+        openPayPalBtn.setPreferredSize(new Dimension(150, 40));
+        
+        JButton confirmBtn = createStyledButton("Payment Complete", new Color(0, 48, 135));
+        confirmBtn.setPreferredSize(new Dimension(150, 40));
+        confirmBtn.setEnabled(false);
+        
+        JButton cancelBtn = createStyledButton("Cancel", new Color(180, 80, 60));
+        cancelBtn.setPreferredSize(new Dimension(150, 40));
+
+        openPayPalBtn.addActionListener(e -> {
+            try {
+                // Open browser for PayPal payment
+                String returnUrl = "http://localhost:8000/paypal-return";
+                String cancelUrl = "http://localhost:8000/paypal-cancel";
+                
+                // In a real implementation, you would create a PayPal order here
+                // For demo purposes, we'll just open a browser
+                java.awt.Desktop.getDesktop().browse(
+                    new java.net.URI("https://www.sandbox.paypal.com/checkoutnow?token=demo_token")
+                );
+                
+                openPayPalBtn.setEnabled(false);
+                confirmBtn.setEnabled(true);
+                JOptionPane.showMessageDialog(paypalDialog,
+                    "Browser opened for PayPal payment.\nPlease complete the payment in your browser and return here to click 'Payment Complete'.",
+                    "PayPal Payment",
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(paypalDialog,
+                    "Failed to open browser: " + ex.getMessage(),
+                    "Browser Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        confirmBtn.addActionListener(e -> {
+            completePayment("PayPal", printBtn);
+            paypalDialog.dispose();
+            LocalServer.stopServer();
+        });
+
+        cancelBtn.addActionListener(e -> {
+            paypalDialog.dispose();
+            LocalServer.stopServer();
+        });
+
+        buttonPanel.add(openPayPalBtn);
+        buttonPanel.add(confirmBtn);
+        buttonPanel.add(cancelBtn);
+
+        panel.add(paypalLogo, BorderLayout.NORTH);
+        panel.add(new JScrollPane(instructions), BorderLayout.CENTER);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        paypalDialog.add(panel);
+        paypalDialog.setVisible(true);
     }
 
     // -------------------------

@@ -24,9 +24,9 @@ public class BillHistoryPanel extends JPanel {
         setLayout(new BorderLayout(15, 15));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         setBackground(new Color(250, 240, 230));
-        
-        // Main background with gradient
-        JPanel mainPanel = new JPanel(new BorderLayout()) {
+
+        // Gradient background main panel
+        JPanel mainPanel = new JPanel(new BorderLayout(15, 15)) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -40,37 +40,42 @@ public class BillHistoryPanel extends JPanel {
             }
         };
         mainPanel.setOpaque(false);
-        setOpaque(false);
 
-        // Header with beautiful styling
+        // Header
         JLabel headerLabel = new JLabel("📋 Bill History", SwingConstants.CENTER);
         headerLabel.setFont(new Font("Georgia", Font.BOLD, 32));
         headerLabel.setForeground(new Color(80, 50, 40));
         headerLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
         mainPanel.add(headerLabel, BorderLayout.NORTH);
 
-        initMainTable();
+        // Initialize tables
+        initMainTable(mainPanel);
         initItemsTable();
 
-        // Control buttons panel
+        // Buttons panel
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         controlPanel.setOpaque(false);
-        
+
         refreshBtn = createStyledButton("Refresh Bills", new Color(150, 90, 60));
         refreshBtn.addActionListener(e -> refresh());
-        
+
         exportBtn = createStyledButton("Export to CSV", new Color(110, 70, 50));
         exportBtn.addActionListener(e -> exportToCSV());
-        
+
         controlPanel.add(refreshBtn);
         controlPanel.add(exportBtn);
 
         mainPanel.add(controlPanel, BorderLayout.SOUTH);
-        add(mainPanel);
 
+        add(mainPanel, BorderLayout.CENTER);
+
+        // Initial data load
         refresh();
     }
 
+    // --------------------------------------------------
+    // BUTTON STYLE
+    // --------------------------------------------------
     private JButton createStyledButton(String text, Color color) {
         JButton button = new JButton(text);
         button.setFont(new Font("Georgia", Font.BOLD, 14));
@@ -78,11 +83,11 @@ public class BillHistoryPanel extends JPanel {
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(color.darker(), 2),
-            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+                BorderFactory.createLineBorder(color.darker(), 2),
+                BorderFactory.createEmptyBorder(8, 15, 8, 15)
         ));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+
         // Hover effect
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -93,22 +98,25 @@ public class BillHistoryPanel extends JPanel {
                 button.setBackground(color);
             }
         });
-        
+
         return button;
     }
 
-    private void initMainTable() {
+    // --------------------------------------------------
+    // MAIN TABLE (BILL LIST)
+    // --------------------------------------------------
+    private void initMainTable(JPanel mainPanel) {
         String[] columns = {"Bill ID", "Bill Number", "Customer", "Amount", "Date", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // All cells read-only
+                return false;
             }
-            
+
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == 0) return Integer.class; // Bill ID
-                if (columnIndex == 3) return Double.class;  // Amount
+                if (columnIndex == 0) return Integer.class;
+                if (columnIndex == 3) return Double.class;
                 return String.class;
             }
         };
@@ -118,19 +126,20 @@ public class BillHistoryPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(150, 90, 60)), 
-                "All Bills",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Georgia", Font.BOLD, 16),
-                new Color(80, 50, 40)
-            ),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(new Color(150, 90, 60)),
+                        "All Bills",
+                        javax.swing.border.TitledBorder.LEFT,
+                        javax.swing.border.TitledBorder.TOP,
+                        new Font("Georgia", Font.BOLD, 16),
+                        new Color(80, 50, 40)
+                ),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
         scrollPane.getViewport().setBackground(new Color(250, 240, 230));
-        
-        add(scrollPane, BorderLayout.CENTER);
+
+        // ✅ FIX: add to mainPanel, not directly to BillHistoryPanel
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -154,29 +163,25 @@ public class BillHistoryPanel extends JPanel {
         table.setShowGrid(true);
         table.setIntercellSpacing(new Dimension(1, 1));
 
-        // Custom renderer for status column
+        // Renderer for status color
         table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
                     boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                
-                // Color code status column
-                if (column == 5) { // Status column
+
+                if (column == 5) {
                     String status = value.toString();
                     if ("PAID".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
                         c.setBackground(new Color(200, 255, 200));
-                        c.setForeground(Color.BLACK);
                     } else if ("PENDING".equalsIgnoreCase(status)) {
                         c.setBackground(new Color(255, 255, 200));
-                        c.setForeground(Color.BLACK);
                     } else if ("FAILED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
                         c.setBackground(new Color(255, 200, 200));
-                        c.setForeground(Color.BLACK);
                     } else {
                         c.setBackground(new Color(255, 250, 245));
-                        c.setForeground(new Color(80, 50, 40));
                     }
+                    c.setForeground(Color.BLACK);
                 } else {
                     c.setBackground(new Color(255, 250, 245));
                     c.setForeground(new Color(80, 50, 40));
@@ -191,22 +196,21 @@ public class BillHistoryPanel extends JPanel {
             }
         });
 
-        // Simple alignment using fully qualified names
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
-        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
-        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
-        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+        // Alignment renderers
+        DefaultTableCellRenderer center = new DefaultTableCellRenderer();
+        center.setHorizontalAlignment(SwingConstants.CENTER);
+        DefaultTableCellRenderer left = new DefaultTableCellRenderer();
+        left.setHorizontalAlignment(SwingConstants.LEFT);
+        DefaultTableCellRenderer right = new DefaultTableCellRenderer();
+        right.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer); // Bill ID
-        table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer); // Bill Number
-        table.getColumnModel().getColumn(2).setCellRenderer(leftRenderer);   // Customer
-        table.getColumnModel().getColumn(3).setCellRenderer(rightRenderer);  // Amount
-        table.getColumnModel().getColumn(4).setCellRenderer(centerRenderer); // Date
-        table.getColumnModel().getColumn(5).setCellRenderer(centerRenderer); // Status
+        table.getColumnModel().getColumn(0).setCellRenderer(center);
+        table.getColumnModel().getColumn(1).setCellRenderer(center);
+        table.getColumnModel().getColumn(2).setCellRenderer(left);
+        table.getColumnModel().getColumn(3).setCellRenderer(right);
+        table.getColumnModel().getColumn(4).setCellRenderer(center);
+        table.getColumnModel().getColumn(5).setCellRenderer(center);
 
-        // Header styling
         JTableHeader header = table.getTableHeader();
         header.setFont(new Font("Georgia", Font.BOLD, 14));
         header.setBackground(new Color(150, 90, 60));
@@ -215,6 +219,9 @@ public class BillHistoryPanel extends JPanel {
         header.setPreferredSize(new Dimension(header.getWidth(), 35));
     }
 
+    // --------------------------------------------------
+    // ITEMS TABLE (BILL DETAILS)
+    // --------------------------------------------------
     private void initItemsTable() {
         String[] itemColumns = {"Book Name", "Quantity", "Price", "Total"};
         itemsTableModel = new DefaultTableModel(itemColumns, 0) {
@@ -222,11 +229,11 @@ public class BillHistoryPanel extends JPanel {
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
-            
+
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == 1) return Integer.class; // Quantity
-                if (columnIndex == 2 || columnIndex == 3) return Double.class; // Price, Total
+                if (columnIndex == 1) return Integer.class;
+                if (columnIndex == 2 || columnIndex == 3) return Double.class;
                 return String.class;
             }
         };
@@ -241,19 +248,18 @@ public class BillHistoryPanel extends JPanel {
         table.setGridColor(new Color(200, 180, 160));
         table.setBackground(new Color(255, 250, 245));
         table.setForeground(new Color(80, 50, 40));
-        
-        // Simple alignment using fully qualified names
-        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
-        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
-        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
-        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
 
-        table.getColumnModel().getColumn(0).setCellRenderer(leftRenderer);  // Book Name
-        table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer); // Quantity
-        table.getColumnModel().getColumn(2).setCellRenderer(rightRenderer); // Price
-        table.getColumnModel().getColumn(3).setCellRenderer(rightRenderer); // Total
+        DefaultTableCellRenderer left = new DefaultTableCellRenderer();
+        left.setHorizontalAlignment(SwingConstants.LEFT);
+        DefaultTableCellRenderer right = new DefaultTableCellRenderer();
+        right.setHorizontalAlignment(SwingConstants.RIGHT);
+        DefaultTableCellRenderer center = new DefaultTableCellRenderer();
+        center.setHorizontalAlignment(SwingConstants.CENTER);
+
+        table.getColumnModel().getColumn(0).setCellRenderer(left);
+        table.getColumnModel().getColumn(1).setCellRenderer(center);
+        table.getColumnModel().getColumn(2).setCellRenderer(right);
+        table.getColumnModel().getColumn(3).setCellRenderer(right);
 
         JTableHeader header = table.getTableHeader();
         header.setFont(new Font("Georgia", Font.BOLD, 13));
@@ -262,6 +268,9 @@ public class BillHistoryPanel extends JPanel {
         header.setReorderingAllowed(false);
     }
 
+    // --------------------------------------------------
+    // SHOW BILL DETAILS POPUP
+    // --------------------------------------------------
     private void showBillItems(int billId) {
         try {
             List<BillItem> items = billDAO.getBillItemsByBillId(billId);
@@ -272,34 +281,32 @@ public class BillHistoryPanel extends JPanel {
                 double itemTotal = item.getUnitPrice() * item.getQuantity();
                 totalAmount += itemTotal;
                 itemsTableModel.addRow(new Object[]{
-                    item.getBookName(), 
-                    item.getQuantity(),
-                    item.getUnitPrice(),
-                    itemTotal
+                        item.getBookName(),
+                        item.getQuantity(),
+                        item.getUnitPrice(),
+                        itemTotal
                 });
             }
 
-            // Create a detailed view panel
+            Bill bill = bills.stream()
+                    .filter(b -> b.getId() == billId)
+                    .findFirst()
+                    .orElse(null);
+
             JPanel detailsPanel = new JPanel(new BorderLayout(10, 10));
             detailsPanel.setBackground(new Color(250, 240, 230));
             detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-            // Bill summary
-            Bill bill = bills.stream()
-                .filter(b -> b.getId() == billId)
-                .findFirst()
-                .orElse(null);
 
             if (bill != null) {
                 JPanel summaryPanel = new JPanel(new GridLayout(0, 2, 10, 5));
                 summaryPanel.setBackground(new Color(250, 240, 230));
                 summaryPanel.setBorder(BorderFactory.createTitledBorder(
-                    BorderFactory.createLineBorder(new Color(150, 90, 60)),
-                    "Bill Summary",
-                    javax.swing.border.TitledBorder.LEFT,
-                    javax.swing.border.TitledBorder.TOP,
-                    new Font("Georgia", Font.BOLD, 14),
-                    new Color(80, 50, 40)
+                        BorderFactory.createLineBorder(new Color(150, 90, 60)),
+                        "Bill Summary",
+                        javax.swing.border.TitledBorder.LEFT,
+                        javax.swing.border.TitledBorder.TOP,
+                        new Font("Georgia", Font.BOLD, 14),
+                        new Color(80, 50, 40)
                 ));
 
                 summaryPanel.add(createSummaryLabel("Bill Number:"));
@@ -316,15 +323,14 @@ public class BillHistoryPanel extends JPanel {
                 detailsPanel.add(summaryPanel, BorderLayout.NORTH);
             }
 
-            // Items table
             JScrollPane itemsScroll = new JScrollPane(itemsTable);
             itemsScroll.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(150, 90, 60)),
-                "Items Purchased",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Georgia", Font.BOLD, 14),
-                new Color(80, 50, 40)
+                    BorderFactory.createLineBorder(new Color(150, 90, 60)),
+                    "Items Purchased",
+                    javax.swing.border.TitledBorder.LEFT,
+                    javax.swing.border.TitledBorder.TOP,
+                    new Font("Georgia", Font.BOLD, 14),
+                    new Color(80, 50, 40)
             ));
             itemsScroll.setPreferredSize(new Dimension(500, 250));
 
@@ -358,11 +364,14 @@ public class BillHistoryPanel extends JPanel {
         return label;
     }
 
+    // --------------------------------------------------
+    // REFRESH TABLE
+    // --------------------------------------------------
     public void refresh() {
         tableModel.setRowCount(0);
         try {
             bills = billDAO.getAllBills();
-            if (bills != null) {
+            if (bills != null && !bills.isEmpty()) {
                 for (Bill b : bills) {
                     tableModel.addRow(new Object[]{
                             b.getId(),
@@ -374,28 +383,21 @@ public class BillHistoryPanel extends JPanel {
                     });
                 }
 
-                if (!bills.isEmpty()) {
-                    TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
-                    table.setRowSorter(sorter);
-                    List<SortKey> sortKeys = new ArrayList<>();
-                    sortKeys.add(new SortKey(0, SortOrder.DESCENDING)); // Sort by Bill ID
-                    sorter.setSortKeys(sortKeys);
-                    
-                    JOptionPane.showMessageDialog(this, 
-                        "Loaded " + bills.size() + " bills successfully!", 
-                        "Refresh Complete", 
+                TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
+                table.setRowSorter(sorter);
+                List<SortKey> sortKeys = new ArrayList<>();
+                sortKeys.add(new SortKey(0, SortOrder.DESCENDING));
+                sorter.setSortKeys(sortKeys);
+
+                JOptionPane.showMessageDialog(this,
+                        "Loaded " + bills.size() + " bills successfully!",
+                        "Refresh Complete",
                         JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(this, 
-                        "No bills found in the database.", 
-                        "Information", 
-                        JOptionPane.INFORMATION_MESSAGE);
-                }
             } else {
-                JOptionPane.showMessageDialog(this, 
-                    "Failed to load bills from database.", 
-                    "Error", 
-                    JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        "No bills found in the database.",
+                        "Information",
+                        JOptionPane.INFORMATION_MESSAGE);
             }
 
         } catch (Exception e) {
@@ -406,7 +408,10 @@ public class BillHistoryPanel extends JPanel {
                     JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
+    // --------------------------------------------------
+    // EXPORT TO CSV
+    // --------------------------------------------------
     private void exportToCSV() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Export Bill History");
@@ -415,10 +420,7 @@ public class BillHistoryPanel extends JPanel {
         if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             java.io.File file = fileChooser.getSelectedFile();
             try (java.io.PrintWriter writer = new java.io.PrintWriter(file)) {
-                // Write header
                 writer.println("Bill ID,Bill Number,Customer,Amount,Date,Status");
-                
-                // Write data
                 for (int i = 0; i < tableModel.getRowCount(); i++) {
                     StringBuilder sb = new StringBuilder();
                     for (int j = 0; j < tableModel.getColumnCount(); j++) {
@@ -431,17 +433,16 @@ public class BillHistoryPanel extends JPanel {
                     }
                     writer.println(sb.toString());
                 }
+                JOptionPane.showMessageDialog(this,
+                        "Bill history exported successfully to: " + file.getAbsolutePath(),
+                        "Export Successful",
+                        JOptionPane.INFORMATION_MESSAGE);
 
-                JOptionPane.showMessageDialog(this, 
-                    "Bill history exported successfully to: " + file.getAbsolutePath(),
-                    "Export Successful", 
-                    JOptionPane.INFORMATION_MESSAGE);
-
-            } catch (java.io.FileNotFoundException e) {
-                JOptionPane.showMessageDialog(this, 
-                    "Error exporting file: " + e.getMessage(),
-                    "Export Error", 
-                    JOptionPane.ERROR_MESSAGE);
+            } catch (FileNotFoundException e) {
+                JOptionPane.showMessageDialog(this,
+                        "Error exporting file: " + e.getMessage(),
+                        "Export Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
         }
     }

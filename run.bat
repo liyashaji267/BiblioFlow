@@ -22,6 +22,7 @@ javac -cp "lib/*" -d out ^
     BookDAO.java ^
     BillDAO.java ^
     OrderDAO.java ^
+    TransactionDAO.java ^
     BillGenerator.java ^
     SearchPanel.java ^
     PaymentOpt.java ^
@@ -51,9 +52,9 @@ javac -cp "lib/*" -d out ^
     CustomerLoyaltyService.java ^
     LoyaltyProgramUI.java ^
     LoyaltyAndDiscountUI.java ^
-    TransactionDAO.java ^
-    TransactionSummary.java
-
+    TransactionSummary.java ^
+    PayPalClient.java ^
+    LocalServer.java 
 
 if errorlevel 1 (
     echo.

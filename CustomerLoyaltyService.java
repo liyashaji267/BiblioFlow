@@ -1,25 +1,30 @@
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
 
 public class CustomerLoyaltyService {
     private BillDAO billDAO;
     private Map<String, CustomerLoyalty> customerLoyaltyMap;
     
     // Loyalty program constants
-    private static final double REGULAR_CUSTOMER_THRESHOLD = 1000.0; // ₹1000 spent
-    private static final double PREMIUM_CUSTOMER_THRESHOLD = 5000.0; // ₹5000 spent
-    private static final double POINTS_PER_RUPEE = 1.0; // 1 point per ₹1 spent
-    private static final double REGULAR_DISCOUNT_RATE = 0.05; // 5% discount
-    private static final double PREMIUM_DISCOUNT_RATE = 0.10; // 10% discount
+    private static final double REGULAR_CUSTOMER_THRESHOLD = 1000.0;
+    private static final double PREMIUM_CUSTOMER_THRESHOLD = 5000.0;
+    private static final double POINTS_PER_RUPEE = 1.0;
+    private static final double REGULAR_DISCOUNT_RATE = 0.05;
+    private static final double PREMIUM_DISCOUNT_RATE = 0.10;
+
     
     public CustomerLoyaltyService(BillDAO billDAO) {
         this.billDAO = billDAO;
         this.customerLoyaltyMap = new HashMap<>();
         loadCustomerData();
+    } // <- Added missing closing brace for constructor
+
+    public Map<String, CustomerLoyalty> getAllCustomers() {
+        return new HashMap<>(customerLoyaltyMap);
     }
     
     private void loadCustomerData() {
+        // Load from database
         Map<String, Double> customerTotals = billDAO.getCustomerPurchaseHistory();
         for (Map.Entry<String, Double> entry : customerTotals.entrySet()) {
             String customerName = entry.getKey();
@@ -29,14 +34,17 @@ public class CustomerLoyaltyService {
             CustomerLoyalty loyalty = new CustomerLoyalty(customerName, totalSpent, purchaseCount);
             customerLoyaltyMap.put(customerName, loyalty);
         }
+        
+        // Add sample data for testing if no data in database
+        if (customerLoyaltyMap.isEmpty()) {
+            customerLoyaltyMap.put("John Doe", new CustomerLoyalty("John Doe", 3500.0, 5));
+            customerLoyaltyMap.put("Alice Smith", new CustomerLoyalty("Alice Smith", 800.0, 2));
+            customerLoyaltyMap.put("Bob Johnson", new CustomerLoyalty("Bob Johnson", 6500.0, 8));
+        }
     }
     
     public CustomerLoyalty getCustomerLoyalty(String customerName) {
         return customerLoyaltyMap.get(customerName);
-    }
-    
-    public Map<String, CustomerLoyalty> getAllCustomers() {
-        return new HashMap<>(customerLoyaltyMap);
     }
     
     public double calculateDiscount(String customerName, double currentBillAmount) {
@@ -55,7 +63,15 @@ public class CustomerLoyaltyService {
     }
     
     public int calculateLoyaltyPoints(String customerName, double billAmount) {
-        return (int) (billAmount * POINTS_PER_RUPEE);
+        CustomerLoyalty loyalty = getCustomerLoyalty(customerName);
+        double pointsMultiplier = POINTS_PER_RUPEE;
+        
+        // Premium customers get bonus points
+        if (loyalty != null && loyalty.getTotalSpent() >= PREMIUM_CUSTOMER_THRESHOLD) {
+            pointsMultiplier = 2.0;
+        }
+        
+        return (int) (billAmount * pointsMultiplier);
     }
     
     public String getCustomerTier(String customerName) {
@@ -79,6 +95,9 @@ public class CustomerLoyaltyService {
             loyalty.addPurchase(billAmount);
         }
         customerLoyaltyMap.put(customerName, loyalty);
+        
+        // Save to database through BillDAO
+        billDAO.saveCustomerPurchase(customerName, billAmount);
     }
     
     // Customer Loyalty Data Class
@@ -106,18 +125,16 @@ public class CustomerLoyaltyService {
         public double getTotalSpent() { return totalSpent; }
         public int getPurchaseCount() { return purchaseCount; }
         public int getTotalPoints() { return totalPoints; }
-        
-        @Override
-        public String toString() {
-            return String.format("Customer: %s\nTotal Spent: ₹%.2f\nPurchases: %d\nLoyalty Points: %d\nTier: %s",
-                customerName, totalSpent, purchaseCount, totalPoints,
-                getTier());
-        }
-        
         public String getTier() {
             if (totalSpent >= PREMIUM_CUSTOMER_THRESHOLD) return "Premium";
             if (totalSpent >= REGULAR_CUSTOMER_THRESHOLD) return "Regular";
             return "Standard";
+        }
+        
+        @Override
+        public String toString() {
+            return String.format("Customer: %s\nTotal Spent: ₹%.2f\nPurchases: %d\nLoyalty Points: %d\nTier: %s",
+                customerName, totalSpent, purchaseCount, totalPoints, getTier());
         }
     }
 }

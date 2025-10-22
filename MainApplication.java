@@ -5,8 +5,7 @@ import javax.swing.table.JTableHeader;
 
 import org.apache.poi.sl.usermodel.PaintStyle.GradientPaint;
 
-import com.itextpdf.text.Image;
-
+import java.awt.Image;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.*;
@@ -80,7 +79,7 @@ public class MainApplication extends JFrame {
     }
 
     private void initUI() {
-    // Set the frontpage-style gradient background - CORRECT VERSION
+    initializeMalayalamFonts();
     setContentPane(new JPanel(new BorderLayout()) {
         @Override
         protected void paintComponent(Graphics g) {
@@ -279,105 +278,99 @@ public class MainApplication extends JFrame {
     JPanel panel = new JPanel(new BorderLayout());
     panel.setOpaque(false);
 
-    // DB connection
-    Connection connection = null;
+    // Malayalam font support (Unicode)
     try {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-        connection = DriverManager.getConnection(
-            "jdbc:mysql://localhost:3306/your_db_name", "username", "password");
-    } catch (Exception e) {
-        e.printStackTrace();
+        Font malFont = new Font("Noto Sans Malayalam", Font.PLAIN, 14);
+        UIManager.put("Label.font", malFont);
+        UIManager.put("Button.font", malFont);
+        UIManager.put("TextField.font", malFont);
+        UIManager.put("Table.font", malFont);
+        UIManager.put("TableHeader.font", malFont);
+    } catch (Exception ex) {
+        System.out.println("Malayalam font not found. Using default font.");
     }
 
-    BookDAO bookDAO = new BookDAO(connection);
+    
+    Connection connection = null;
+    try {
+        connection = DBUtil.getConnection(); // your DB connection
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Database connection failed: " + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
 
     // Tabbed Pane
     JTabbedPane tabbedPane = new JTabbedPane();
-    tabbedPane.setOpaque(false);
+    tabbedPane.setFont(new Font("Georgia", Font.BOLD, 16));
 
     // Inventory View Tab
-    JPanel inventoryViewPanel = new JPanel(new BorderLayout()); // create panel for inventory view
+    JPanel inventoryViewPanel = createInventoryViewPanel();
     tabbedPane.addTab("Inventory View", inventoryViewPanel);
 
-    // Books Panel inside Inventory View
-    JPanel booksPanel = new JPanel();
-    booksPanel.setLayout(new BoxLayout(booksPanel, BoxLayout.Y_AXIS));
-    JScrollPane scrollPane = new JScrollPane(booksPanel);
-    inventoryViewPanel.add(scrollPane, BorderLayout.CENTER);
-    // Fetch books and add cards
-    List<Book> booksList = bookDAO.getAllBooks();
-    for (Book book : booksList) {
-        JPanel bookCard = createBookCard(book);
-        booksPanel.add(bookCard);
-    }
-    booksPanel.revalidate();
-    booksPanel.repaint();
-
     // Search Tab
-    SearchPanel searchPanel = new SearchPanel(bookDAO);
+    SearchPanel searchPanel = new SearchPanel();
     tabbedPane.addTab("Search Books", searchPanel);
 
     panel.add(tabbedPane, BorderLayout.CENTER);
     return panel;
-    }
-
+}
 
     private JPanel createInventoryViewPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        
-        // Header
-        JPanel headerPanel = createInventoryHeader();
-        
-        // Book grid
-        JPanel booksPanel = new JPanel(new WrapLayout());
-        booksPanel.setBackground(new Color(250, 240, 230));
-        JScrollPane scrollPane = new JScrollPane(booksPanel);
-        scrollPane.setName("inventoryScrollPane"); // Name for identification
-        scrollPane.getViewport().setBackground(new Color(250, 240, 230));
-        
-        panel.add(headerPanel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
-        // Load initial data
-        refreshInventoryDisplay(booksPanel);
-        
-        return panel;
-    }
+    JPanel panel = new JPanel(new BorderLayout());
+    panel.setOpaque(false);
+
+    JPanel headerPanel = createInventoryHeader();
+
+    // Books grid
+    JPanel booksPanel = new JPanel(new WrapLayout());
+    booksPanel.setBackground(new Color(250, 240, 230));
+    JScrollPane scrollPane = new JScrollPane(booksPanel);
+    scrollPane.getViewport().setBackground(new Color(250, 240, 230));
+    scrollPane.setBorder(null);
+
+    panel.add(headerPanel, BorderLayout.NORTH);
+    panel.add(scrollPane, BorderLayout.CENTER);
+
+    // Load all books initially
+    refreshInventoryDisplay(booksPanel);
+
+    return panel;
+}
 
     private JPanel createInventoryHeader() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(150, 90, 60)); // Main brown
+    JPanel headerPanel = new JPanel(new BorderLayout());
+    headerPanel.setBackground(new Color(150, 90, 60)); // Main brown
 
-        JLabel titleLabel = new JLabel("Inventory Management", SwingConstants.CENTER); // Changed variable name
-        titleLabel.setFont(new Font("Georgia", Font.BOLD, 24));
-        titleLabel.setForeground(Color.WHITE);
-        
-        // Control buttons panel
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        controlPanel.setOpaque(false);
-        
-        JButton addBookBtn = new JButton("Add New Book");
-        addBookBtn.setBackground(new Color(150, 90, 60)); // Main brown
-        addBookBtn.setForeground(Color.WHITE);
-        addBookBtn.setFont(new Font("Georgia", Font.BOLD, 14));
-        addBookBtn.addActionListener(e -> showAddBookDialog());
-        
-        JButton refreshBtn = new JButton("Refresh");
-        refreshBtn.setBackground(new Color(130, 80, 50)); // Slightly darker brown
-        refreshBtn.setForeground(Color.WHITE);
-        refreshBtn.setFont(new Font("Georgia", Font.BOLD, 14));
-        refreshBtn.addActionListener(e -> refreshInventory());
-        
-        controlPanel.add(refreshBtn);
-        controlPanel.add(addBookBtn);
-        
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
-        headerPanel.add(controlPanel, BorderLayout.EAST);
-        
-        return headerPanel;
-    }
+    JLabel titleLabel = new JLabel("Inventory Management", SwingConstants.CENTER);
+    titleLabel.setFont(new Font("Georgia", Font.BOLD, 24));
+    titleLabel.setForeground(Color.WHITE);
 
+    // Control buttons
+    JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    controlPanel.setOpaque(false);
+
+    JButton addBookBtn = new JButton("Add New Book");
+    addBookBtn.setBackground(new Color(150, 90, 60));
+    addBookBtn.setForeground(Color.WHITE);
+    addBookBtn.setFont(new Font("Georgia", Font.BOLD, 14));
+    addBookBtn.addActionListener(e -> showAddBookDialog());
+
+    JButton refreshBtn = new JButton("Refresh");
+    refreshBtn.setBackground(new Color(130, 80, 50));
+    refreshBtn.setForeground(Color.WHITE);
+    refreshBtn.setFont(new Font("Georgia", Font.BOLD, 14));
+    refreshBtn.addActionListener(e -> refreshInventory());
+
+    controlPanel.add(refreshBtn);
+    controlPanel.add(addBookBtn);
+
+    headerPanel.add(titleLabel, BorderLayout.CENTER);
+    headerPanel.add(controlPanel, BorderLayout.EAST);
+
+    return headerPanel;
+}
     private void showEditBookDialog(Book book) {
         // Create edit dialog
         JDialog editDialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Edit Book", Dialog.ModalityType.APPLICATION_MODAL);
@@ -538,17 +531,16 @@ public class MainApplication extends JFrame {
         BorderFactory.createLineBorder(new Color(150, 90, 60), 1),
         BorderFactory.createEmptyBorder(10, 10, 10, 10)
     ));
-    card.setPreferredSize(new Dimension(318, 188));
+    card.setPreferredSize(new Dimension(320, 190));
     card.setBackground(new Color(255, 250, 245));
 
-    // =============================
-    // Book Info Section
-    // =============================
+    // Book Info
     JLabel titleLabel = new JLabel("<html><b>" + book.getTitle() + "</b></html>");
-    titleLabel.setFont(new Font("Georgia", Font.BOLD, 14));
+    titleLabel.setFont(new Font("Noto Sans Malayalam", Font.BOLD, 14));
     titleLabel.setForeground(new Color(80, 50, 40));
 
     JLabel author = new JLabel("By: " + book.getAuthor());
+    author.setFont(new Font("Noto Sans Malayalam", Font.PLAIN, 13));
     author.setForeground(new Color(80, 50, 40));
 
     JLabel price = new JLabel("₹" + book.getPrice());
@@ -568,15 +560,20 @@ public class MainApplication extends JFrame {
     infoPanel.add(stock);
     infoPanel.add(isbn);
 
-    // =============================
-    // Cover Image Section
-    // =============================
+    // Book Image
     JLabel coverLabel;
     try {
         String path = book.getImagePath();
         if (path != null && !path.trim().isEmpty()) {
-            ImageIcon icon = new ImageIcon(path);
-            java.awt.Image scaled = icon.getImage().getScaledInstance(80, 120, java.awt.Image.SCALE_SMOOTH);
+            ImageIcon icon;
+            try {
+                // ✅ Try from resources
+                icon = new ImageIcon(getClass().getResource("/images/" + path));
+            } catch (Exception ex) {
+                // ✅ Fallback to absolute path
+                icon = new ImageIcon(path);
+            }
+            Image scaled = icon.getImage().getScaledInstance(80, 120, Image.SCALE_SMOOTH);
             coverLabel = new JLabel(new ImageIcon(scaled));
         } else {
             throw new Exception("No path");
@@ -587,17 +584,12 @@ public class MainApplication extends JFrame {
         coverLabel.setPreferredSize(new Dimension(80, 120));
     }
 
-    // =============================
-    // Combine image + info
-    // =============================
     JPanel centerPanel = new JPanel(new BorderLayout());
     centerPanel.setBackground(new Color(255, 250, 245));
     centerPanel.add(coverLabel, BorderLayout.WEST);
     centerPanel.add(infoPanel, BorderLayout.CENTER);
 
-    // =============================
-    // Action Buttons
-    // =============================
+    // Buttons
     JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 5, 0));
     buttonPanel.setBackground(new Color(255, 250, 245));
 
@@ -614,15 +606,10 @@ public class MainApplication extends JFrame {
     buttonPanel.add(editBtn);
     buttonPanel.add(deleteBtn);
 
-    // =============================
-    // Assemble Card
-    // =============================
     card.add(centerPanel, BorderLayout.CENTER);
     card.add(buttonPanel, BorderLayout.SOUTH);
-
     return card;
-    }
-
+}
 
     // Helper method to find tabbed pane in the panel hierarchy
     private JTabbedPane findTabbedPane(Container container) {
@@ -677,42 +664,45 @@ public class MainApplication extends JFrame {
         JScrollPane tableScroll = new JScrollPane(billingTable);
         panel.add(tableScroll, BorderLayout.CENTER);
 
-        // Use the color constants (fixed)
-        billingTable.setBackground(new Color(255, 250, 245));
-        billingTable.setForeground(new Color(80, 50, 40));
+      // --- Billing Table ---
+        billingTable.setBackground(new Color(250, 240, 230)); // light cream
+        billingTable.setForeground(new Color(60, 40, 30));    // darker text
         billingTable.setGridColor(new Color(200, 180, 160));
-        billingTable.setSelectionBackground(new Color(150, 90, 60));
+        billingTable.setSelectionBackground(new Color(120, 70, 40)); // darker brown
         billingTable.setSelectionForeground(Color.WHITE);
-        billingTable.setFillsViewportHeight(true); // fills empty space
+        billingTable.setFillsViewportHeight(true);
 
-        // Update table header colors
+        // Table header
         JTableHeader header = billingTable.getTableHeader();
-        header.setBackground(new Color(150, 90, 60));
+        header.setBackground(new Color(150, 90, 60)); // brown header
         header.setForeground(Color.WHITE);
         header.setFont(new Font("Georgia", Font.BOLD, 14));
 
-        // --- Log area ---
+        // --- Log Area ---
         JTextArea logArea = new JTextArea(5, 30);
         logArea.setEditable(false);
-        logArea.setBackground(new Color(255, 250, 245));
-        logArea.setForeground(new Color(80, 50, 40));
+        logArea.setBackground(new Color(250, 240, 230));
+        logArea.setForeground(new Color(60, 40, 30));
+        logArea.setFont(new Font("Georgia", Font.PLAIN, 14));
         JScrollPane logScroll = new JScrollPane(logArea);
 
-        // --- Total label ---
+        // --- Total Label ---
         JLabel totalLabel = new JLabel("Total: ₹0.00");
         totalLabel.setFont(new Font("Georgia", Font.BOLD, 18));
         totalLabel.setForeground(new Color(150, 90, 60));
 
-        // --- ScanBarcodePanel ---
+        // --- Scan Barcode Panel ---
         ScanBarcodePanel scanPanel = new ScanBarcodePanel(billingTable, logArea, totalLabel);
         scanPanel.setPreferredSize(new Dimension(400, 300));
 
+        // --- Right Panel ---
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
-        rightPanel.setOpaque(false);
+        rightPanel.setBackground(new Color(250, 240, 230)); // match frontpage background
         rightPanel.add(scanPanel, BorderLayout.CENTER);
         rightPanel.add(logScroll, BorderLayout.SOUTH);
 
         panel.add(rightPanel, BorderLayout.EAST);
+
 
         // --- Control panel (checkout / clear cart) ---
         JPanel controlPanel = new JPanel(new FlowLayout());
@@ -1002,9 +992,18 @@ public class MainApplication extends JFrame {
     private JPanel createSubstoreBookCard(Book book) {
         JPanel card = new JPanel(new BorderLayout());
         card.setBorder(BorderFactory.createLineBorder(new Color(150, 90, 60), 1));
-        card.setPreferredSize(new Dimension(250, 120));
+        card.setPreferredSize(new Dimension(250, 180)); // increased height for image
         card.setBackground(new Color(255, 250, 245));
-        
+
+        // Book cover
+        ImageIcon icon = new ImageIcon(book.getImagePath()); // Path to image file
+        java.awt.Image img = icon.getImage().getScaledInstance(100, 140, java.awt.Image.SCALE_SMOOTH);
+        JLabel imgLabel = new JLabel(new ImageIcon(img));
+        imgLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+
+    
+        // Book info panel
         JLabel titleLabel = new JLabel("<html><b>" + book.getTitle() + "</b></html>");
         titleLabel.setForeground(new Color(80, 50, 40));
         JLabel store = new JLabel("Store: " + book.getLocation());
@@ -1013,24 +1012,31 @@ public class MainApplication extends JFrame {
         qty.setForeground(new Color(80, 50, 40));
         JLabel price = new JLabel("Price: ₹" + book.getPrice());
         price.setForeground(new Color(80, 50, 40));
-        
+
         JPanel info = new JPanel(new GridLayout(4, 1));
         info.setBackground(new Color(255, 250, 245));
         info.add(titleLabel);
         info.add(store);
         info.add(qty);
         info.add(price);
-        
+
+        // Add to cart button
         JButton addBtn = new JButton("Add to Cart");
         addBtn.setBackground(new Color(150, 90, 60));
         addBtn.setForeground(Color.WHITE);
         addBtn.addActionListener(e -> addToCart(book));
-        
-        card.add(info, BorderLayout.CENTER);
-        card.add(addBtn, BorderLayout.SOUTH);
-        
+
+        // Left: image, Right: info + button
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBackground(new Color(255, 250, 245));
+        rightPanel.add(info, BorderLayout.CENTER);
+        rightPanel.add(addBtn, BorderLayout.SOUTH);
+        card.add(imgLabel, BorderLayout.WEST);
+        card.add(rightPanel, BorderLayout.CENTER);
+
         return card;
     }
+
     
     private void simulateBarcodeScan() {
         String isbn = JOptionPane.showInputDialog(this, "Enter ISBN or scan barcode:");
@@ -1085,7 +1091,7 @@ public class MainApplication extends JFrame {
         
         PaymentOpt payment = new PaymentOpt(cartTotal, () -> {
             completeSale(customerName, customerPhone);
-        }, customerName, customerPhone);
+        }, customerName);
         
         payment.setVisible(true);
     }
@@ -1100,66 +1106,91 @@ public class MainApplication extends JFrame {
         }
     }
     
-    private void showAddBookDialog() {
-        JDialog dialog = new JDialog(this, "Add New Book", true);
-        dialog.setSize(500, 600);
-        dialog.setLocationRelativeTo(this);
-        
-        JPanel panel = new JPanel(new GridLayout(0, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(new Color(250, 240, 230));
-        
-        String[] labels = {"ISBN:", "Title:", "Author:", "Publisher:", "Edition:", "Price:", "Quantity:", "Rack Number:", "Genre:"};
-        JTextField[] fields = new JTextField[labels.length];
-        
-        for (int i = 0; i < labels.length; i++) {
-            JLabel label = new JLabel(labels[i]);
-            label.setForeground(new Color(80, 50, 40));
-            panel.add(label);
-            fields[i] = new JTextField();
-            panel.add(fields[i]);
-        }
-        
-        JButton saveBtn = new JButton("Save Book");
-        saveBtn.setBackground(new Color(150, 90, 60));
-        saveBtn.setForeground(Color.WHITE);
-        saveBtn.addActionListener(_ -> saveBookToDatabase(fields, dialog));
-        
-        JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.setBackground(new Color(130, 80, 50));
-        cancelBtn.setForeground(Color.WHITE);
-        cancelBtn.addActionListener(_ -> dialog.dispose());
-        
-        panel.add(saveBtn);
-        panel.add(cancelBtn);
-        
-        dialog.add(new JScrollPane(panel));
-        dialog.setVisible(true);
+   private void showAddBookDialog() {
+    JDialog dialog = new JDialog(this, "Add New Book", true);
+    dialog.setSize(550, 650);
+    dialog.setLocationRelativeTo(this);
+
+    JPanel panel = new JPanel(new GridBagLayout());
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    panel.setBackground(new Color(250, 240, 230));
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(8, 8, 8, 8);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.weightx = 1.0;
+
+    String[] labels = {"ISBN:", "Title:", "Author:", "Publisher:", "Edition:", "Price:", "Quantity:", "Rack Number:", "Genre:"};
+    JTextField[] fields = new JTextField[labels.length];
+
+    for (int i = 0; i < labels.length; i++) {
+        gbc.gridx = 0;
+        gbc.gridy = i;
+        JLabel label = new JLabel(labels[i]);
+        label.setForeground(new Color(80, 50, 40));
+        panel.add(label, gbc);
+
+        gbc.gridx = 1;
+        fields[i] = new JTextField();
+        fields[i].setPreferredSize(new Dimension(250, 30));
+        panel.add(fields[i], gbc);
     }
-    
+
+    // Buttons
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    buttonPanel.setBackground(new Color(250, 240, 230));
+
+    JButton saveBtn = new JButton("Save Book");
+    saveBtn.setBackground(new Color(150, 90, 60));
+    saveBtn.setForeground(Color.WHITE);
+    saveBtn.setFont(new Font("Georgia", Font.BOLD, 14));
+    saveBtn.addActionListener(e -> saveBookToDatabase(fields, dialog));
+
+    JButton cancelBtn = new JButton("Cancel");
+    cancelBtn.setBackground(new Color(130, 80, 50));
+    cancelBtn.setForeground(Color.WHITE);
+    cancelBtn.setFont(new Font("Georgia", Font.BOLD, 14));
+    cancelBtn.addActionListener(e -> dialog.dispose());
+
+    buttonPanel.add(saveBtn);
+    buttonPanel.add(cancelBtn);
+
+    dialog.setLayout(new BorderLayout());
+    dialog.add(new JScrollPane(panel), BorderLayout.CENTER);
+    dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+    dialog.setVisible(true);
+    }
+
     private void saveBookToDatabase(JTextField[] fields, JDialog dialog) {
         try {
-            String isbn = fields[0].getText();
-            String title = fields[1].getText();
-            String author = fields[2].getText();
-            String publisher = fields[3].getText();
-            String edition = fields[4].getText();
-            double price = Double.parseDouble(fields[5].getText());
-            int quantity = Integer.parseInt(fields[6].getText());
-            String rackNumber = fields[7].getText();
-            String genre = fields[8].getText();
-            
-            Book book = new Book(0, isbn, title, author, publisher, edition, price, quantity, rackNumber, "Main Store", null, genre);
-            if (bookDAO.addBook(book)) {
-                JOptionPane.showMessageDialog(dialog, "Book added successfully!");
+            Book newBook = new Book(
+                0, // id (auto-generated)
+                fields[0].getText().trim(), // ISBN
+                fields[1].getText().trim(), // Title
+                fields[2].getText().trim(), // Author
+                fields[3].getText().trim(), // Publisher
+                fields[4].getText().trim(), // Edition
+                Double.parseDouble(fields[5].getText().trim()), // Price
+                Integer.parseInt(fields[6].getText().trim()),   // Quantity
+                fields[7].getText().trim(),  // Rack Number
+                "Store",                      // Location
+                "images/default.jpg",         // Image Path
+                fields[8].getText().trim()    // Genre
+            );
+
+            if (bookDAO.addBook(newBook)) {
+                JOptionPane.showMessageDialog(dialog, "Book added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 dialog.dispose();
                 refreshInventory();
             }
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(dialog, "Please enter valid numbers for price and quantity!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(dialog, "Please enter valid numbers for Price and Quantity!", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
+
     private void logout() {
         int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to logout?", "Logout", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
@@ -1201,7 +1232,7 @@ public class MainApplication extends JFrame {
         // Get the search panel (index 3 in mainPanel)
         JPanel searchPanel = (JPanel) mainPanel.getComponent(3);
         JScrollPane resultsScroll = null;
-        
+
         // Find the scroll pane in search panel
         for (Component c : searchPanel.getComponents()) {
             if (c instanceof JScrollPane) {
@@ -1209,46 +1240,112 @@ public class MainApplication extends JFrame {
                 break;
             }
         }
-        
+
         if (resultsScroll == null) return;
-        
+
         JPanel container = (JPanel) resultsScroll.getViewport().getView();
         container.removeAll();
-        
+
         if (books.isEmpty()) {
             container.add(new JLabel("No books found for this search."));
         } else {
             for (Book b : books) {
                 JPanel card = new JPanel(new BorderLayout());
                 card.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-                card.setPreferredSize(new Dimension(250, 120));
-                
+                card.setPreferredSize(new Dimension(250, 140)); // slightly taller for image
+
+                // ---------------- Cover Image ----------------
+                JLabel imgLabel;
+                if (b.getImagePath() != null && !b.getImagePath().isEmpty()) {
+                    try {
+                        ImageIcon icon = new ImageIcon(b.getImagePath());
+                        java.awt.Image img = icon.getImage().getScaledInstance(80, 120, java.awt.Image.SCALE_SMOOTH);
+                        imgLabel = new JLabel(new ImageIcon(img));
+                    } catch (Exception e) {
+                        // In case the image path is invalid or missing
+                        imgLabel = new JLabel("No Image", SwingConstants.CENTER);
+                        imgLabel.setPreferredSize(new Dimension(80, 120));
+                    }
+                } else {
+                    // Placeholder if no image
+                    imgLabel = new JLabel("No Image", SwingConstants.CENTER);
+                    imgLabel.setPreferredSize(new Dimension(80, 120));
+                }
+                imgLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+                card.add(imgLabel, BorderLayout.WEST);
+
+
+                // ---------------- Book Info ----------------
                 JLabel titleLabel = new JLabel("<html><b>" + b.getTitle() + "</b></html>");
                 JLabel author = new JLabel("Author: " + b.getAuthor());
                 JLabel category = new JLabel("Category: " + b.getGenre());
                 JLabel price = new JLabel("Price: ₹" + b.getPrice());
-                
+
                 JPanel info = new JPanel(new GridLayout(4, 1));
                 info.add(titleLabel);
                 info.add(author);
                 info.add(category);
                 info.add(price);
-                
+
+                card.add(info, BorderLayout.CENTER);
+
+                // ---------------- Add to Cart ----------------
                 JButton addBtn = new JButton("Add to Cart");
                 addBtn.addActionListener(_ -> addToCart(b));
-                
-                card.add(info, BorderLayout.CENTER);
                 card.add(addBtn, BorderLayout.SOUTH);
-                
+
                 container.add(card);
             }
         }
-        
+
         container.revalidate();
         container.repaint();
+
     }
+
 
     private void StoreReports() {
         cardLayout.show(mainPanel, "Reports");  
+    }
+
+    private void initializeMalayalamFonts() {
+    try {
+        // Try to load Malayalam font
+        Font malayalamFont = null;
+        
+        // Check for common Malayalam fonts
+        String[] fontNames = {
+            "Noto Sans Malayalam", 
+            "Manjari",
+            "Rachana",
+            "AnjaliOldLipi",
+            "FreeSerif"
+        };
+        
+        for (String fontName : fontNames) {
+            malayalamFont = new Font(fontName, Font.PLAIN, 14);
+            if (malayalamFont.getFamily().equals(fontName)) {
+                break;
+            }
+        }
+        
+        if (malayalamFont != null) {
+            UIManager.put("Label.font", malayalamFont);
+            UIManager.put("Button.font", malayalamFont);
+            UIManager.put("TextField.font", malayalamFont);
+            UIManager.put("TextArea.font", malayalamFont);
+            UIManager.put("Table.font", malayalamFont);
+            UIManager.put("TableHeader.font", malayalamFont.deriveFont(Font.BOLD));
+            UIManager.put("ComboBox.font", malayalamFont);
+            UIManager.put("List.font", malayalamFont);
+        }
+    } catch (Exception ex) {
+        System.out.println("Malayalam fonts not available, using default fonts");
+        // Fallback to a font that supports basic Unicode
+        Font fallbackFont = new Font("Dialog", Font.PLAIN, 14);
+        UIManager.put("Label.font", fallbackFont);
+        UIManager.put("Button.font", fallbackFont);
+        UIManager.put("TextField.font", fallbackFont);
+    }
     }
 }

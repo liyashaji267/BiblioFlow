@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 public class SubstorePaymentOpt extends JDialog {
     private double totalAmount;
@@ -15,7 +16,7 @@ public class SubstorePaymentOpt extends JDialog {
         this.onPaymentSuccess = onPaymentSuccess;
         this.customerName = customerName;
         this.customerPhone = customerPhone;
-        setSize(450, 520);
+        setSize(450, 600); // Increased height for PayPal
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         initUI();
@@ -62,18 +63,20 @@ public class SubstorePaymentOpt extends JDialog {
         panel.add(infoPanel, BorderLayout.NORTH);
 
         // ---------- PAYMENT OPTIONS ----------
-        JPanel options = new JPanel(new GridLayout(4, 1, 15, 15));
+        JPanel options = new JPanel(new GridLayout(5, 1, 15, 15)); // Changed to 5 for PayPal
         options.setOpaque(false);
 
         JButton upi = createStyledButton("Pay via UPI", new Color(150, 90, 60));
         JButton net = createStyledButton("Pay via Net Banking", new Color(120, 70, 50));
         JButton card = createStyledButton("Pay via Card", new Color(160, 100, 70));
         JButton cod = createStyledButton("Cash on Delivery", new Color(200, 120, 80));
+        JButton paypal = createStyledButton("Pay with PayPal", new Color(0, 48, 135));
 
         options.add(upi);
         options.add(net);
         options.add(card);
         options.add(cod);
+        options.add(paypal);
 
         panel.add(options, BorderLayout.CENTER);
 
@@ -82,6 +85,7 @@ public class SubstorePaymentOpt extends JDialog {
         net.addActionListener(e -> handlePayment("Net Banking"));
         card.addActionListener(e -> handleCardPayment());
         cod.addActionListener(e -> handlePayment("Cash on Delivery"));
+        paypal.addActionListener(e -> handlePayPalPayment());
 
         add(panel);
     }
@@ -316,6 +320,58 @@ public class SubstorePaymentOpt extends JDialog {
                !holder.trim().isEmpty() &&
                cardNumber.replaceAll("\\s", "").length() >= 15 &&
                cvv.length() >= 3;
+    }
+
+    private void handlePayPalPayment() {
+        if (!PayPalClient.isConfigured()) {
+            JOptionPane.showMessageDialog(this,
+                    "PayPal is not configured properly.\nPlease check your .env file with CLIENT_ID and CLIENT_SECRET.",
+                    "PayPal Configuration Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Start local server for callbacks
+        try {
+            LocalServer.startServer();
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to start local server for PayPal callbacks.",
+                    "Server Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this,
+                "PayPal payment selected.\nAmount: $" + String.format("%.2f", totalAmount / 75.0) + " (₹" + String.format("%.2f", totalAmount) + ")\n\n" +
+                "The system will open your browser for PayPal payment processing.",
+                "PayPal Payment",
+                JOptionPane.INFORMATION_MESSAGE);
+
+        try {
+            // Open browser for PayPal payment
+            java.awt.Desktop.getDesktop().browse(
+                new java.net.URI("https://www.sandbox.paypal.com/checkoutnow?token=demo_token")
+            );
+            
+            // Simulate payment completion
+            int result = JOptionPane.showConfirmDialog(this,
+                    "Have you completed the PayPal payment in your browser?",
+                    "Payment Confirmation",
+                    JOptionPane.YES_NO_OPTION);
+            
+            if (result == JOptionPane.YES_OPTION) {
+                completePayment("PayPal");
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to open browser: " + e.getMessage(),
+                    "Browser Error",
+                    JOptionPane.ERROR_MESSAGE);
+        } finally {
+            LocalServer.stopServer();
+        }
     }
 
     private void handlePayment(String method) {

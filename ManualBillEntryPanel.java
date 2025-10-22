@@ -31,17 +31,18 @@ public class ManualBillEntryPanel extends JPanel {
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBackground(new Color(250, 240, 230)); // cream background
 
         // Header
         JLabel headerLabel = new JLabel("Manual Bill Entry", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 26));
-        headerLabel.setForeground(new Color(70, 130, 180));
+        headerLabel.setFont(new Font("Georgia", Font.BOLD, 26));
+        headerLabel.setForeground(new Color(150, 90, 60)); // warm brown
         headerLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
         add(headerLabel, BorderLayout.NORTH);
 
         // Main content panel
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout(10, 10));
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setOpaque(false);
 
         // Search panel
         JPanel searchPanel = createSearchPanel();
@@ -60,46 +61,49 @@ public class ManualBillEntryPanel extends JPanel {
 
     private JPanel createSearchPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY, 1), "Add Items to Bill", TitledBorder.LEFT, TitledBorder.TOP, new Font("Arial", Font.BOLD, 14)));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(150, 90, 60), 1),
+                "Add Items to Bill", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Georgia", Font.BOLD, 14), new Color(150, 90, 60)
+        ));
 
-        // Search type
         JLabel searchTypeLabel = new JLabel("Search By:");
-        searchTypeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchTypeLabel.setFont(new Font("Georgia", Font.PLAIN, 14));
+        searchTypeLabel.setForeground(new Color(80, 50, 40));
         panel.add(searchTypeLabel);
 
         searchTypeCombo = new JComboBox<>(new String[]{"ISBN", "Title"});
-        searchTypeCombo.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchTypeCombo.setFont(new Font("Georgia", Font.PLAIN, 14));
         panel.add(searchTypeCombo);
 
-        // Search field
         JLabel searchLabel = new JLabel("Search:");
-        searchLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchLabel.setFont(new Font("Georgia", Font.PLAIN, 14));
+        searchLabel.setForeground(new Color(80, 50, 40));
         panel.add(searchLabel);
 
         searchField = new JTextField(20);
-        searchField.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchField.setFont(new Font("Georgia", Font.PLAIN, 14));
         panel.add(searchField);
 
-        // Quantity field
         JLabel quantityLabel = new JLabel("Quantity:");
-        quantityLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        quantityLabel.setFont(new Font("Georgia", Font.PLAIN, 14));
+        quantityLabel.setForeground(new Color(80, 50, 40));
         panel.add(quantityLabel);
 
         quantityField = new JTextField(5);
-        quantityField.setFont(new Font("Arial", Font.PLAIN, 14));
+        quantityField.setFont(new Font("Georgia", Font.PLAIN, 14));
         panel.add(quantityField);
 
-        // Search button
         JButton searchBtn = new JButton("Search & Add");
-        searchBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        searchBtn.setBackground(new Color(33, 150, 243));
+        searchBtn.setFont(new Font("Georgia", Font.BOLD, 14));
+        searchBtn.setBackground(new Color(150, 90, 60));
         searchBtn.setForeground(Color.WHITE);
         searchBtn.setFocusPainted(false);
         searchBtn.setBorder(BorderFactory.createEmptyBorder(6, 15, 6, 15));
         searchBtn.addActionListener(new SearchButtonListener());
         panel.add(searchBtn);
 
-        // Enter key support
         searchField.addActionListener(new SearchButtonListener());
         quantityField.addActionListener(new SearchButtonListener());
 
@@ -108,7 +112,12 @@ public class ManualBillEntryPanel extends JPanel {
 
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY, 1), "Bill Items", TitledBorder.LEFT, TitledBorder.TOP, new Font("Arial", Font.BOLD, 14)));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(150, 90, 60), 1),
+                "Bill Items", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Georgia", Font.BOLD, 14), new Color(150, 90, 60)
+        ));
 
         String[] columns = {"ISBN", "Title", "Author", "Price", "Quantity", "Total"};
         tableModel = new DefaultTableModel(columns, 0) {
@@ -124,16 +133,18 @@ public class ManualBillEntryPanel extends JPanel {
         };
 
         billTable = new JTable(tableModel);
-        billTable.setFont(new Font("Arial", Font.PLAIN, 14));
-        billTable.setRowHeight(25);
-        billTable.setGridColor(Color.LIGHT_GRAY);
-        billTable.setSelectionBackground(new Color(70, 130, 180));
+        billTable.setFont(new Font("Georgia", Font.PLAIN, 14));
+        billTable.setRowHeight(28);
+        billTable.setBackground(new Color(255, 250, 245));
+        billTable.setForeground(new Color(80, 50, 40));
+        billTable.setGridColor(new Color(200, 180, 160));
+        billTable.setSelectionBackground(new Color(150, 90, 60));
         billTable.setSelectionForeground(Color.WHITE);
         billTable.setFillsViewportHeight(true);
 
         JTableHeader header = billTable.getTableHeader();
-        header.setFont(new Font("Arial", Font.BOLD, 14));
-        header.setBackground(new Color(70, 130, 180));
+        header.setFont(new Font("Georgia", Font.BOLD, 14));
+        header.setBackground(new Color(150, 90, 60));
         header.setForeground(Color.WHITE);
 
         tableModel.addTableModelListener(e -> {
@@ -147,8 +158,8 @@ public class ManualBillEntryPanel extends JPanel {
         panel.add(scrollPane, BorderLayout.CENTER);
 
         totalLabel = new JLabel("Total: ₹0.00", SwingConstants.RIGHT);
-        totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        totalLabel.setForeground(Color.RED);
+        totalLabel.setFont(new Font("Georgia", Font.BOLD, 16));
+        totalLabel.setForeground(new Color(150, 90, 60));
         totalLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         panel.add(totalLabel, BorderLayout.SOUTH);
 
@@ -157,37 +168,45 @@ public class ManualBillEntryPanel extends JPanel {
 
     private JPanel createControlPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setOpaque(false);
 
         // Customer panel
         JPanel customerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        customerPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY, 1), "Customer Details", TitledBorder.LEFT, TitledBorder.TOP, new Font("Arial", Font.BOLD, 14)));
+        customerPanel.setOpaque(false);
+        customerPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(150, 90, 60), 1),
+                "Customer Details", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Georgia", Font.BOLD, 14), new Color(150, 90, 60)
+        ));
 
         JLabel customerLabel = new JLabel("Customer Name:");
-        customerLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        customerLabel.setFont(new Font("Georgia", Font.PLAIN, 14));
+        customerLabel.setForeground(new Color(80, 50, 40));
         customerPanel.add(customerLabel);
 
         customerNameField = new JTextField(15);
-        customerNameField.setFont(new Font("Arial", Font.PLAIN, 14));
+        customerNameField.setFont(new Font("Georgia", Font.PLAIN, 14));
         customerPanel.add(customerNameField);
 
         // Buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        buttonPanel.setOpaque(false);
 
         JButton removeBtn = new JButton("Remove Selected");
-        removeBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        removeBtn.setBackground(Color.RED);
+        removeBtn.setFont(new Font("Georgia", Font.BOLD, 14));
+        removeBtn.setBackground(new Color(150, 90, 60));
         removeBtn.setForeground(Color.WHITE);
         removeBtn.addActionListener(e -> removeSelectedItem());
 
         JButton clearBtn = new JButton("Clear Bill");
-        clearBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        clearBtn.setBackground(Color.ORANGE);
-        clearBtn.setForeground(Color.BLACK);
+        clearBtn.setFont(new Font("Georgia", Font.BOLD, 14));
+        clearBtn.setBackground(new Color(180, 100, 60));
+        clearBtn.setForeground(Color.WHITE);
         clearBtn.addActionListener(e -> clearBill());
 
         JButton generateBtn = new JButton("Generate Bill");
-        generateBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        generateBtn.setBackground(new Color(76, 175, 80));
+        generateBtn.setFont(new Font("Georgia", Font.BOLD, 14));
+        generateBtn.setBackground(new Color(120, 70, 40));
         generateBtn.setForeground(Color.WHITE);
         generateBtn.addActionListener(e -> generateBill());
 

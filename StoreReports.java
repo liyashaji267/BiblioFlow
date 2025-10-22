@@ -1,5 +1,10 @@
 import javax.swing.*;
 import javax.swing.border.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+
+import org.apache.poi.sl.usermodel.PaintStyle.GradientPaint;
+import org.apache.poi.ss.usermodel.Color;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -10,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class StoreReports extends JPanel {
@@ -24,6 +30,10 @@ public class StoreReports extends JPanel {
         this.billDAO = new BillDAO();
         initializeUI();
         loadChartData();
+        JTabbedPane reportTabs = new JTabbedPane();
+        JPanel topSellingPanel = createTopSellingBooksPanel();
+        reportTabs.addTab("📊 Top Selling Books", topSellingPanel);
+
     }
 
     private void initializeUI() {
@@ -32,13 +42,17 @@ public class StoreReports extends JPanel {
 
         // Main background with gradient
         JPanel mainPanel = new JPanel(new BorderLayout()) {
+            // In StoreReports.java, replace the gradient paint code with:
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
-                GradientPaint gp = new GradientPaint(
-                        0, 0, new Color(250, 240, 230),
-                        0, getHeight(), new Color(230, 200, 180)
+    
+                // Use LinearGradientPaint instead of GradientPaint
+                float[] fractions = {0.0f, 1.0f};
+                Color[] colors = {new Color(250, 240, 230), new Color(230, 200, 180)};
+                LinearGradientPaint gp = new LinearGradientPaint(
+                        0, 0, 0, getHeight(), fractions, colors
                 );
                 g2d.setPaint(gp);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
@@ -451,6 +465,88 @@ public class StoreReports extends JPanel {
                 "Error refreshing charts: " + e.getMessage(), 
                 "Error", 
                 JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void loadTopSellingBooks(DefaultTableModel model) {
+        try {
+            BillDAO billDAO = new BillDAO();
+            List<BillItem> allItems = billDAO.getAllBillItems();
+        
+            // Group by book name and calculate totals
+            Map<String, BookSales> salesMap = new HashMap<>();
+        
+            for (BillItem item : allItems) {
+                String bookName = item.getBookName();
+                String isbn = item.getBookIsbn(); // This should work now with the getter
+            
+                BookSales sales = salesMap.getOrDefault(bookName, new BookSales(bookName, isbn));
+                sales.addSale(item.getQuantity(), item.getPrice() * item.getQuantity());
+                salesMap.put(bookName, sales);
+            }
+        
+            // Convert to list and sort by quantity sold
+            List<BookSales> topSellers = new ArrayList<>(salesMap.values());
+            topSellers.sort((a, b) -> Integer.compare(b.getQuantitySold(), a.getQuantitySold()));
+        
+            // Add to table (top 10)
+            model.setRowCount(0);
+            int rank = 1;
+            for (BookSales sales : topSellers) {
+                if (rank > 10) break;
+                model.addRow(new Object[]{
+                    rank,
+                    sales.getBookName(),
+                    getAuthorFromISBN(sales.getIsbn()),
+                    sales.getQuantitySold(),
+                    String.format("₹%.2f", sales.getTotalRevenue())
+                });
+                rank++;
+            }
+        
+            if (model.getRowCount() == 0) {
+                model.addRow(new Object[]{"-", "No sales data available", "-", "-", "-"});
+            }
+        
+        } catch (Exception e) {
+            e.printStackTrace();
+            model.addRow(new Object[]{"-", "Error loading data", "-", "-", "-"});
+        }
+    }
+
+    // Helper class for book sales data
+    class BookSales {
+        private String bookName;
+        private String isbn;
+        private int quantitySold;
+        private double totalRevenue;
+    
+        public BookSales(String bookName, String isbn) {
+            this.bookName = bookName;
+            this.isbn = isbn;
+            this.quantitySold = 0;
+            this.totalRevenue = 0;
+        }
+    
+        public void addSale(int quantity, double revenue) {
+            this.quantitySold += quantity;
+            this.totalRevenue += revenue;
+        }
+    
+        // Getters
+        public String getBookName() { return bookName; }
+        public String getIsbn() { return isbn; }
+        public int getQuantitySold() { return quantitySold; }
+        public double getTotalRevenue() { return totalRevenue; }
+    }
+
+    private String getAuthorFromISBN(String isbn) {
+        try {
+            BookDAO bookDAO = new BookDAO();
+            Book book = bookDAO.findBookByISBN(isbn);
+            return book != null ? book.getAuthor() : "Unknown Author";
+        } catch (Exception e) {
+            return "Unknown Author";
         }
     }
 }

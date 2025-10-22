@@ -27,6 +27,7 @@ class CartItem {
     public double getTotalPrice() {
         return book.getPrice() * quantity;
     }
+
 }
 
 // ====================== SubstoreCart ======================

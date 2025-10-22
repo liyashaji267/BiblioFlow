@@ -1,3 +1,5 @@
+import java.sql.Timestamp;
+
 public class Bill {
     private int id;
     private String billNumber;
@@ -9,7 +11,30 @@ public class Bill {
     private String paymentStatus;
     private String orderStatus;
     private String date;
-    private String paymentMethod; // Add this field
+    private String paymentMethod;
+    private int userId; // Add this field
+
+    // Default constructor
+    public Bill() {
+    }
+
+    // Parameterized constructor (optional)
+    public Bill(int id, String billNumber, String customerName, String customerPhone, 
+                double totalAmount, double gstAmount, double finalAmount, 
+                String paymentStatus, String orderStatus, String date, String paymentMethod, int userId) {
+        this.id = id;
+        this.billNumber = billNumber;
+        this.customerName = customerName;
+        this.customerPhone = customerPhone;
+        this.totalAmount = totalAmount;
+        this.gstAmount = gstAmount;
+        this.finalAmount = finalAmount;
+        this.paymentStatus = paymentStatus;
+        this.orderStatus = orderStatus;
+        this.date = date;
+        this.paymentMethod = paymentMethod;
+        this.userId = userId;
+    }
 
     // Getters and setters
     public int getId() { return id; }
@@ -42,7 +67,9 @@ public class Bill {
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
 
-    // Add getter and setter for paymentMethod
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    public int getUserId() { return userId; }
+    public void setUserId(int userId) { this.userId = userId; }
 }
