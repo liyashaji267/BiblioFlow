@@ -6,6 +6,47 @@ import java.util.Map;
 
 public class BillDAO {
 
+    // Add this missing method to fix CustomerLoyaltyService error
+    public boolean saveCustomerPurchase(String customerName, double billAmount) {
+        String sql = "INSERT INTO customer_purchases (customer_name, purchase_amount, purchase_date) VALUES (?, ?, NOW())";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, customerName);
+            stmt.setDouble(2, billAmount);
+            
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Add this method if you need to get customer purchase history
+    public List<CustomerPurchase> getCustomerPurchases(String customerName) {
+        List<CustomerPurchase> purchases = new ArrayList<>();
+        String sql = "SELECT customer_name, purchase_amount, purchase_date FROM customer_purchases WHERE customer_name = ? ORDER BY purchase_date DESC";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, customerName);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String name = rs.getString("customer_name");
+                    double amount = rs.getDouble("purchase_amount");
+                    Date purchaseDate = rs.getDate("purchase_date");
+                    purchases.add(new CustomerPurchase(name, amount, purchaseDate));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return purchases;
+    }
+
+    // Rest of your existing BillDAO methods remain the same...
     public boolean createBill(List<Book> cartItems, double totalAmount, String customerName, String customerPhone, int userId) {
         Connection conn = null;
         try {
@@ -458,5 +499,22 @@ public class BillDAO {
         public String getPeriod() { return period; }
         public int getBooksSold() { return booksSold; }
         public double getRevenue() { return revenue; }
+    }
+
+    // Add CustomerPurchase class if missing
+    public static class CustomerPurchase {
+        private String customerName;
+        private double purchaseAmount;
+        private Date purchaseDate;
+
+        public CustomerPurchase(String customerName, double purchaseAmount, Date purchaseDate) {
+            this.customerName = customerName;
+            this.purchaseAmount = purchaseAmount;
+            this.purchaseDate = purchaseDate;
+        }
+
+        public String getCustomerName() { return customerName; }
+        public double getPurchaseAmount() { return purchaseAmount; }
+        public Date getPurchaseDate() { return purchaseDate; }
     }
 }

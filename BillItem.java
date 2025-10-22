@@ -24,4 +24,6 @@ public class BillItem {
 
     public double getUnitPrice() { return unitPrice; }
     public void setUnitPrice(double unitPrice) { this.unitPrice = unitPrice; }
+
+    public double getPrice() { return unitPrice; }
 }

@@ -79,7 +79,7 @@ public class MainApplication extends JFrame {
     }
 
     private void initUI() {
-    initializeMalayalamFonts();
+    // Set the frontpage-style gradient background - CORRECT VERSION
     setContentPane(new JPanel(new BorderLayout()) {
         @Override
         protected void paintComponent(Graphics g) {
@@ -1091,7 +1091,7 @@ public class MainApplication extends JFrame {
         
         PaymentOpt payment = new PaymentOpt(cartTotal, () -> {
             completeSale(customerName, customerPhone);
-        }, customerName);
+        }, customerName, customerPhone);
         
         payment.setVisible(true);
     }
@@ -1306,46 +1306,5 @@ public class MainApplication extends JFrame {
 
     private void StoreReports() {
         cardLayout.show(mainPanel, "Reports");  
-    }
-
-    private void initializeMalayalamFonts() {
-    try {
-        // Try to load Malayalam font
-        Font malayalamFont = null;
-        
-        // Check for common Malayalam fonts
-        String[] fontNames = {
-            "Noto Sans Malayalam", 
-            "Manjari",
-            "Rachana",
-            "AnjaliOldLipi",
-            "FreeSerif"
-        };
-        
-        for (String fontName : fontNames) {
-            malayalamFont = new Font(fontName, Font.PLAIN, 14);
-            if (malayalamFont.getFamily().equals(fontName)) {
-                break;
-            }
-        }
-        
-        if (malayalamFont != null) {
-            UIManager.put("Label.font", malayalamFont);
-            UIManager.put("Button.font", malayalamFont);
-            UIManager.put("TextField.font", malayalamFont);
-            UIManager.put("TextArea.font", malayalamFont);
-            UIManager.put("Table.font", malayalamFont);
-            UIManager.put("TableHeader.font", malayalamFont.deriveFont(Font.BOLD));
-            UIManager.put("ComboBox.font", malayalamFont);
-            UIManager.put("List.font", malayalamFont);
-        }
-    } catch (Exception ex) {
-        System.out.println("Malayalam fonts not available, using default fonts");
-        // Fallback to a font that supports basic Unicode
-        Font fallbackFont = new Font("Dialog", Font.PLAIN, 14);
-        UIManager.put("Label.font", fallbackFont);
-        UIManager.put("Button.font", fallbackFont);
-        UIManager.put("TextField.font", fallbackFont);
-    }
     }
 }

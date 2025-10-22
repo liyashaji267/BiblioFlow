@@ -1,10 +1,5 @@
 import javax.swing.*;
 import javax.swing.border.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-
-import org.apache.poi.sl.usermodel.PaintStyle.GradientPaint;
-import org.apache.poi.ss.usermodel.Color;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -15,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 
 public class StoreReports extends JPanel {
@@ -30,10 +24,6 @@ public class StoreReports extends JPanel {
         this.billDAO = new BillDAO();
         initializeUI();
         loadChartData();
-        JTabbedPane reportTabs = new JTabbedPane();
-        JPanel topSellingPanel = createTopSellingBooksPanel();
-        reportTabs.addTab("📊 Top Selling Books", topSellingPanel);
-
     }
 
     private void initializeUI() {
@@ -42,15 +32,12 @@ public class StoreReports extends JPanel {
 
         // Main background with gradient
         JPanel mainPanel = new JPanel(new BorderLayout()) {
-            // In StoreReports.java, replace the gradient paint code with:
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
-    
-                // Use LinearGradientPaint instead of GradientPaint
+                java.awt.Color[] colors = {new java.awt.Color(250, 240, 230), new java.awt.Color(230, 200, 180)};
                 float[] fractions = {0.0f, 1.0f};
-                Color[] colors = {new Color(250, 240, 230), new Color(230, 200, 180)};
                 LinearGradientPaint gp = new LinearGradientPaint(
                         0, 0, 0, getHeight(), fractions, colors
                 );
@@ -63,7 +50,7 @@ public class StoreReports extends JPanel {
         // Header with beautiful styling
         JLabel headerLabel = new JLabel("Store Reports & Analytics", SwingConstants.CENTER);
         headerLabel.setFont(new Font("Georgia", Font.BOLD, 36));
-        headerLabel.setForeground(new Color(80, 50, 40));
+        headerLabel.setForeground(new java.awt.Color(80, 50, 40));
         headerLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 30, 0));
         
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -73,19 +60,19 @@ public class StoreReports extends JPanel {
         // Create tabbed pane with custom styling
         tabbedPane = new JTabbedPane(JTabbedPane.TOP);
         tabbedPane.setFont(new Font("Georgia", Font.BOLD, 16));
-        tabbedPane.setBackground(new Color(250, 240, 230));
-        tabbedPane.setForeground(new Color(80, 50, 40));
+        tabbedPane.setBackground(new java.awt.Color(250, 240, 230));
+        tabbedPane.setForeground(new java.awt.Color(80, 50, 40));
         
         // Remove default border and set custom one
         tabbedPane.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(150, 90, 60), 2),
+            BorderFactory.createLineBorder(new java.awt.Color(150, 90, 60), 2),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 
         // Custom tab renderer
-        UIManager.put("TabbedPane.background", new Color(250, 240, 230));
-        UIManager.put("TabbedPane.foreground", new Color(80, 50, 40));
-        UIManager.put("TabbedPane.selected", new Color(205, 155, 125));
+        UIManager.put("TabbedPane.background", new java.awt.Color(250, 240, 230));
+        UIManager.put("TabbedPane.foreground", new java.awt.Color(80, 50, 40));
+        UIManager.put("TabbedPane.selected", new java.awt.Color(205, 155, 125));
 
         // Sales Report Tab
         JPanel salesPanel = createSalesChartPanel();
@@ -104,7 +91,7 @@ public class StoreReports extends JPanel {
         tabbedPane.addTab("👥 Customer Analytics", customerPanel);
 
         // Refresh button with custom styling
-        JButton refreshBtn = createStyledButton("Refresh Data", new Color(150, 90, 60));
+        JButton refreshBtn = createStyledButton("Refresh Data", new java.awt.Color(150, 90, 60));
         refreshBtn.addActionListener(e -> loadChartData());
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -120,11 +107,11 @@ public class StoreReports extends JPanel {
         add(mainPanel);
     }
 
-    private JButton createStyledButton(String text, Color color) {
+    private JButton createStyledButton(String text, java.awt.Color color) {
         JButton button = new JButton(text);
         button.setFont(new Font("Georgia", Font.BOLD, 16));
         button.setBackground(color);
-        button.setForeground(Color.WHITE);
+        button.setForeground(java.awt.Color.WHITE);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(color.darker(), 2),
@@ -150,17 +137,17 @@ public class StoreReports extends JPanel {
         JPanel container = new JPanel(new BorderLayout());
         container.setOpaque(false);
         container.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(150, 90, 60), 1),
+            BorderFactory.createLineBorder(new java.awt.Color(150, 90, 60), 1),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
         
         ChartPanel chartPanel = new ChartPanel(chart);
         chartPanel.setPreferredSize(new Dimension(800, 500));
-        chartPanel.setBackground(new Color(250, 240, 230));
+        chartPanel.setBackground(new java.awt.Color(250, 240, 230));
         
         // Customize chart appearance
-        chart.setBackgroundPaint(new Color(250, 240, 230));
-        chart.getPlot().setBackgroundPaint(new Color(255, 250, 245));
+        chart.setBackgroundPaint(new java.awt.Color(250, 240, 230));
+        chart.getPlot().setBackgroundPaint(new java.awt.Color(255, 250, 245));
         
         container.add(chartPanel, BorderLayout.CENTER);
         return container;
@@ -180,7 +167,7 @@ public class StoreReports extends JPanel {
             salesDataset
         );
         salesChart.getTitle().setFont(new Font("Georgia", Font.BOLD, 20));
-        salesChart.getTitle().setPaint(new Color(80, 50, 40));
+        salesChart.getTitle().setPaint(new java.awt.Color(80, 50, 40));
 
         panel.add(createChartContainer(salesChart), BorderLayout.CENTER);
         return panel;
@@ -200,7 +187,7 @@ public class StoreReports extends JPanel {
             profitDataset
         );
         profitChart.getTitle().setFont(new Font("Georgia", Font.BOLD, 20));
-        profitChart.getTitle().setPaint(new Color(80, 50, 40));
+        profitChart.getTitle().setPaint(new java.awt.Color(80, 50, 40));
 
         panel.add(createChartContainer(profitChart), BorderLayout.CENTER);
         return panel;
@@ -219,7 +206,7 @@ public class StoreReports extends JPanel {
             true, true, false
         );
         inventoryChart.getTitle().setFont(new Font("Georgia", Font.BOLD, 20));
-        inventoryChart.getTitle().setPaint(new Color(80, 50, 40));
+        inventoryChart.getTitle().setPaint(new java.awt.Color(80, 50, 40));
 
         panel.add(createChartContainer(inventoryChart), BorderLayout.CENTER);
         return panel;
@@ -239,7 +226,7 @@ public class StoreReports extends JPanel {
             customerDataset
         );
         customerChart.getTitle().setFont(new Font("Georgia", Font.BOLD, 20));
-        customerChart.getTitle().setPaint(new Color(80, 50, 40));
+        customerChart.getTitle().setPaint(new java.awt.Color(80, 50, 40));
 
         panel.add(createChartContainer(customerChart), BorderLayout.CENTER);
         return panel;
@@ -465,88 +452,6 @@ public class StoreReports extends JPanel {
                 "Error refreshing charts: " + e.getMessage(), 
                 "Error", 
                 JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void loadTopSellingBooks(DefaultTableModel model) {
-        try {
-            BillDAO billDAO = new BillDAO();
-            List<BillItem> allItems = billDAO.getAllBillItems();
-        
-            // Group by book name and calculate totals
-            Map<String, BookSales> salesMap = new HashMap<>();
-        
-            for (BillItem item : allItems) {
-                String bookName = item.getBookName();
-                String isbn = item.getBookIsbn(); // This should work now with the getter
-            
-                BookSales sales = salesMap.getOrDefault(bookName, new BookSales(bookName, isbn));
-                sales.addSale(item.getQuantity(), item.getPrice() * item.getQuantity());
-                salesMap.put(bookName, sales);
-            }
-        
-            // Convert to list and sort by quantity sold
-            List<BookSales> topSellers = new ArrayList<>(salesMap.values());
-            topSellers.sort((a, b) -> Integer.compare(b.getQuantitySold(), a.getQuantitySold()));
-        
-            // Add to table (top 10)
-            model.setRowCount(0);
-            int rank = 1;
-            for (BookSales sales : topSellers) {
-                if (rank > 10) break;
-                model.addRow(new Object[]{
-                    rank,
-                    sales.getBookName(),
-                    getAuthorFromISBN(sales.getIsbn()),
-                    sales.getQuantitySold(),
-                    String.format("₹%.2f", sales.getTotalRevenue())
-                });
-                rank++;
-            }
-        
-            if (model.getRowCount() == 0) {
-                model.addRow(new Object[]{"-", "No sales data available", "-", "-", "-"});
-            }
-        
-        } catch (Exception e) {
-            e.printStackTrace();
-            model.addRow(new Object[]{"-", "Error loading data", "-", "-", "-"});
-        }
-    }
-
-    // Helper class for book sales data
-    class BookSales {
-        private String bookName;
-        private String isbn;
-        private int quantitySold;
-        private double totalRevenue;
-    
-        public BookSales(String bookName, String isbn) {
-            this.bookName = bookName;
-            this.isbn = isbn;
-            this.quantitySold = 0;
-            this.totalRevenue = 0;
-        }
-    
-        public void addSale(int quantity, double revenue) {
-            this.quantitySold += quantity;
-            this.totalRevenue += revenue;
-        }
-    
-        // Getters
-        public String getBookName() { return bookName; }
-        public String getIsbn() { return isbn; }
-        public int getQuantitySold() { return quantitySold; }
-        public double getTotalRevenue() { return totalRevenue; }
-    }
-
-    private String getAuthorFromISBN(String isbn) {
-        try {
-            BookDAO bookDAO = new BookDAO();
-            Book book = bookDAO.findBookByISBN(isbn);
-            return book != null ? book.getAuthor() : "Unknown Author";
-        } catch (Exception e) {
-            return "Unknown Author";
         }
     }
 }
